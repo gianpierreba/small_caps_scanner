@@ -1,0 +1,126 @@
+MIT License
+
+Copyright (c) 2025 Gianpierre Benites
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Additional Terms and Disclaimers
+
+### Web Scraping Disclaimer
+This software includes functionality for web scraping third-party websites. 
+The MIT License above applies ONLY to the source code of this software itself.
+
+**This license does NOT grant you permission to:**
+- Violate the Terms of Service of any third-party website
+- Scrape websites without authorization
+- Bypass technical protection measures
+- Use data in violation of applicable laws or regulations
+
+**You are solely responsible for:**
+- Reviewing and complying with Terms of Service of all websites you interact with
+- Ensuring your use complies with applicable laws (including but not limited to the Computer Fraud and Abuse Act)
+- Obtaining necessary permissions before scraping any website
+- Any legal consequences resulting from your use of this software
+
+### Financial Data Disclaimer
+This software is provided for educational and informational purposes only.
+
+**This software is NOT:**
+- Financial advice or investment recommendations
+- A substitute for professional financial guidance
+- Guaranteed to be accurate, complete, or current
+- Suitable for making investment decisions
+
+**You acknowledge that:**
+- All investment decisions are made at your own risk
+- Past performance does not guarantee future results
+- You should consult with licensed financial advisors before making investment decisions
+- The authors and contributors assume NO responsibility for any financial losses
+
+### API Usage Disclaimer
+This software integrates with various third-party APIs and data services.
+
+**You are responsible for:**
+- Complying with the Terms of Service of all APIs you use
+- Obtaining and maintaining valid API credentials
+- Monitoring your API usage and associated costs
+- Understanding rate limits and usage restrictions
+
+**The authors do not guarantee:**
+- Continued availability of any API
+- Accuracy or completeness of API data
+- That API integrations will continue to function
+- Support for any third-party services
+
+### Limitation of Liability
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHORS OR 
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF, 
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE, 
+INCLUDING BUT NOT LIMITED TO:
+
+- Financial losses from investment decisions
+- Legal consequences from Terms of Service violations  
+- Data loss or corruption
+- Service interruptions or downtime
+- Inaccurate or incomplete data
+- Any direct, indirect, incidental, special, exemplary, or consequential damages
+
+### No Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+This includes, but is not limited to:
+
+- Warranties of merchantability
+- Fitness for a particular purpose
+- Non-infringement
+- Accuracy or reliability of data
+- Uninterrupted or error-free operation
+
+### Compliance Responsibility
+Users of this software are solely responsible for ensuring their use complies with:
+
+- All applicable local, state, national, and international laws
+- Securities regulations and trading rules
+- Data protection and privacy laws (GDPR, CCPA, etc.)
+- Computer fraud and abuse laws
+- Intellectual property laws
+- Terms of Service of all third-party services
+
+### Modification and Distribution
+While the MIT License permits modification and distribution of this software,
+you must:
+
+- Include this license and all disclaimers in any copies or substantial portions
+- Not misrepresent the origin of the software
+- Not use the names of contributors to endorse derived products without permission
+- Ensure any modifications comply with all applicable laws and Terms of Service
+
+### Jurisdiction
+These disclaimers shall be governed by and construed in accordance with the laws
+applicable in your jurisdiction. If any provision is found unenforceable, the 
+remaining provisions shall remain in full effect.
+
+---
+
+**BY USING THIS SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND 
+AGREE TO BE BOUND BY THESE TERMS AND DISCLAIMERS.**
+
+If you do not agree with any of these terms, you must not use this software.

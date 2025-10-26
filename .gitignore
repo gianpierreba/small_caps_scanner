@@ -1,0 +1,50 @@
+# General information about gitignore:
+# https://github.com/github/gitignore/blob/main/Python.gitignore
+
+# From this project
+*.pyc
+.DS_Store
+__pycache__/
+.vscode
+.improvements
+tests.py
+# From this project - Under development
+setup.sh
+setup.py
+
+# From gitignore suggestions
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
