@@ -134,7 +134,7 @@ If you choose to use web scraping features despite the risks:
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/gianpierreba/small_caps_scanner.git
 cd small_caps_scanner
 ```
 
