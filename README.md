@@ -1,5 +1,10 @@
 # Stock Market Scanner
 
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/postgresql-12+-blue.svg)
+
 A comprehensive Python application that automatically scans and tracks stock market movers across pre-market, regular market, and after-market trading sessions. The scanner aggregates data from multiple sources including Charles Schwab API, StockAnalysis.com, and other official APIs to identify top gainers, losers, and most active stocks.
 
 ---
