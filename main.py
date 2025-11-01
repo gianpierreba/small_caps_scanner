@@ -6,6 +6,7 @@ from __version__ import __version__
 import signal
 import sys
 import time
+import platform
 
 
 def searching_ticker(stock_ticker: str):
@@ -174,8 +175,18 @@ if __name__ == "__main__":
     print("    Monitor for HTTP 403/429 errors and stop immediately if blocked.")
     print("\nℹ️  NOTE: After-market scanner is currently under development and disabled.\n")
 
-    # Keep the main thread alive
-    signal.pause()
+    # Keep the main thread alive (cross-platform solution)
+    # signal.pause() is only available on Unix systems
+    if platform.system() == 'Windows':
+        # On Windows, use a loop with sleep to keep the main thread alive
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            signal_handler(None, None)
+    else:
+        # On Unix systems, use signal.pause()
+        signal.pause()
 
     """Search for a specific stock ticker"""
     # stock_ticker = ''
