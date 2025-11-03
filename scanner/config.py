@@ -1,3 +1,22 @@
+"""
+Scanner Configuration Module
+
+This module provides configuration classes and utilities for the stock market scanner.
+It defines market types, scanner configurations, and factory functions for creating
+scanner instances.
+
+Classes:
+    MarketType: Enum representing different market sessions (pre-market, regular, after-market)
+    ScannerConfig: Dataclass holding configuration for each scanner type
+
+Functions:
+    get_scanner_configs: Factory function that returns scanner configurations
+
+Note:
+    The module uses lazy imports in get_scanner_configs() to avoid circular
+    import dependencies between scanner modules.
+"""
+
 from dataclasses import dataclass
 from typing import List
 from enum import Enum
@@ -26,7 +45,7 @@ def get_scanner_configs():
     NOTE: AfterMarket scanner is currently under development and disabled.
     The MarketType.AFTER_MARKET enum remains for database schema compatibility.
     '''
-    from .scanner import PreMarket, RegularMarket
+    from .scanner import PreMarket, RegularMarket # pylint: disable=import-outside-toplevel
     # AfterMarket is commented out - under development
 
     return {

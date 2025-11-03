@@ -1,7 +1,27 @@
-from .config import MarketType, get_scanner_configs
-from datetime import datetime
+"""
+Scanner Executor Module
+
+This module manages the execution and lifecycle of market scanners in separate threads.
+It provides functions to start, stop, and monitor scanner threads for different market
+sessions (pre-market, regular market, after-market).
+
+Functions:
+    execute_market_scanner: Main scanner execution loop
+    start_scanner_thread: Start a scanner in a new thread
+    stop_scanner: Stop a specific scanner thread
+    stop_all_scanners: Stop all active scanner threads
+    get_scanner_status: Get status of all running scanners
+    log_message: Helper function for consistent logging
+
+Global State:
+    active_scanners: Dict tracking active scanner threads
+    stop_events: Dict of threading.Event objects for stopping scanners
+"""
+
 import threading
 import time
+from datetime import datetime
+from .config import MarketType, get_scanner_configs
 
 # Global dictionaries to track active scanners
 active_scanners = {}
@@ -46,7 +66,7 @@ def execute_market_scanner(
                     f"Method '{scanner_method_name}' not found",
                     level="ERROR"
                 )
-            except Exception as e:
+            except (RuntimeError, ValueError, KeyError, TypeError) as e:
                 log_message(
                     f"Error in {scanner_method_name}: {str(e)}",
                     level="ERROR"

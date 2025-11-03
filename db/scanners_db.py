@@ -4,9 +4,11 @@ This module provides classes to handle database connections and operations
 efficiently using a threaded connection pool.
 """
 
-from psycopg2.pool import ThreadedConnectionPool
 import atexit
 import os
+import sys
+from psycopg2.pool import ThreadedConnectionPool
+from psycopg2 import OperationalError, DatabaseError
 
 # Import centralized configuration
 try:
@@ -50,21 +52,21 @@ class DatabaseConnection:
         Get a connection from the pool.
         """
         if cls.connection_pool is None:
-            raise Exception("Connection pool is not initialized.")
+            raise ConnectionError("Connection pool is not initialized.")
         return cls.connection_pool.getconn()
 
     @classmethod
-    def release_connection(cls, conn):
+    def release_connection(cls, connection):
         """
         Return a connection to the pool.
 
         Parameters:
-        - conn: The connection object to be returned to the pool.
+        - connection: The connection object to be returned to the pool.
 
         returns: None
         """
         if cls.connection_pool is not None:
-            cls.connection_pool.putconn(conn)
+            cls.connection_pool.putconn(connection)
 
 
 class DatabaseOperation:
@@ -98,6 +100,7 @@ class DatabaseOperation:
 
 
 class InsertData(DatabaseOperation):
+    """Insert data into DB"""
     def insert_data(self, table: str, data: dict):
         """
         Insert data into the specified table.
@@ -119,7 +122,7 @@ class InsertData(DatabaseOperation):
             values_to_insert = list(data.values())
             self.cursor.execute(insert_query, values_to_insert)
             self.conn.commit()
-        except Exception as e:
+        except (OperationalError, DatabaseError) as e:
             print(f"Error: {e}")
             self.conn.rollback()
         finally:
@@ -130,20 +133,27 @@ class RetrieveData(DatabaseOperation):
     """
     Retrieve data from the database.
     """
-
-    def retrieve_data(self, table_name: str, condition_column: str = None, condition_value: str = None, column: str = None, fetch_all: bool = True) -> list:
+    # pylint: disable=too-many-positional-arguments,too-many-arguments
+    def retrieve_data(
+            self,
+            table_name: str,
+            condition_column: str = None,
+            condition_value: str = None,
+            column: str = None,
+            fetch_all: bool = True
+        ) -> list:
         """
         Retrieve data from a table with an optional WHERE clause using parameterized queries.
 
         Parameters:
-        - table_name: Name of the table to query.
-        - condition_column: Column name for the WHERE clause (optional).
-        - condition_value: Value for the WHERE clause (optional).
-        - column: Specific column to retrieve (optional, defaults to all columns).
-        - fetch_all: If True, fetch all results; otherwise, fetch one. Defaults to True.
+        - table_name (str): Name of the table to query.
+        - condition_column (str): Column name for the WHERE clause (optional).
+        - condition_value (str): Value for the WHERE clause (optional).
+        - column (str): Specific column to retrieve (optional, defaults to all columns).
+        - fetch_all (bool): If True, fetch all results; otherwise, fetch one. Defaults to True.
 
         Returns:
-        - List of results if fetch_all is True; otherwise, a single result.
+            list: List of results if fetch_all is True; otherwise, a single result.
 
         Example:
         - Retrieves the name of the user with id 123:
@@ -167,23 +177,29 @@ class RetrieveData(DatabaseOperation):
             if fetch_all:
                 return self.cursor.fetchall()
             return self.cursor.fetchone()
-        except Exception as e:
+        except (OperationalError, DatabaseError) as e:
             print(f"Error: {e}")
             return []
         finally:
             self.close_connection()
 
-    def execute_custom_query(self, query: str, params: tuple = (), retrieve: bool = True, fetch_all: bool = True) -> list:
+    def execute_custom_query(
+            self,
+            query: str,
+            params: tuple = (),
+            retrieve: bool = True,
+            fetch_all: bool = True
+        ) -> list:
         """
         Execute a custom SQL query.
 
         Parameters:
-        - query: The SQL query string with placeholders for parameters.
-        - params: A tuple containing the parameters to be passed to the query.
-        - fetch_all: If True, fetch all results; otherwise, fetch one.
+            query (str): The SQL query string with placeholders for parameters.
+            params (tuple): A tuple containing the parameters to be passed to the query.
+            fetch_all (bool): If True, fetch all results; otherwise, fetch one.
 
         Returns:
-        - List of results if fetch_all is True; otherwise, a single result.
+            list: List of results if fetch_all is True; otherwise, a single result.
 
         Example:
         - Retrieves names of users older than 25
@@ -201,28 +217,38 @@ class RetrieveData(DatabaseOperation):
                 if fetch_all:
                     return self.cursor.fetchall()
                 return self.cursor.fetchone()
-            else:
-                self.cursor.execute(query, params)
-                self.conn.commit()
-        except Exception as e:
+            self.cursor.execute(query, params)
+            self.conn.commit()
+        except (OperationalError, DatabaseError) as e:
             print(f"Error executing custom query: {e}")
             if not retrieve:
                 self.conn.rollback()
             return []
         finally:
             self.close_connection()
+        return []
 
 
 class UpdateData(DatabaseOperation):
-    def update_data(self, table: str, update_data: dict, where_constraint_column: str, where_constraint_data: str):
+    """Update data in DB"""
+    def update_data(
+            self,
+            table: str,
+            update_data: dict,
+            where_constraint_column: str,
+            where_constraint_data: str
+        ):
         """
         Update data in the specified table.
 
         Parameters:
-        - table: Name of the table to update.
-        - update_data: A dictionary where keys are column names to be updated, and values are the new values.
-        - where_constraint_column: The column used in the WHERE clause for the update condition.
-        - where_constraint_data: The value used in the WHERE clause for the update condition.
+        - table (str): Name of the table to update.
+        - update_data (dict): A dictionary where keys are column names
+            to be updated, and values are the new values.
+        - where_constraint_column (str): The column used in the WHERE clause
+            for the update condition.
+        - where_constraint_data (str): The value used in the WHERE clause
+            for the update condition.
 
         Returns: None
 
@@ -239,7 +265,7 @@ class UpdateData(DatabaseOperation):
                 [where_constraint_data]
             self.cursor.execute(update_query, data_to_update)
             self.conn.commit()
-        except Exception as e:
+        except (OperationalError, DatabaseError) as e:
             print(f"Error: {e}")
             self.conn.rollback()
         finally:
@@ -275,10 +301,8 @@ else:
 atexit.register(DatabaseConnection.close_pool)
 
 if __name__ == "__main__":
-    """
-    Test connection pool and database operations when running directly.
-    Usage: python scanners_db.py
-    """
+    # Test connection pool and database operations when running directly.
+    # Usage: python scanners_db.py
     print("=" * 60)
     print("Testing Database Connection Pool")
     print("=" * 60)
@@ -290,7 +314,7 @@ if __name__ == "__main__":
             print("✓ Connection pool initialized successfully")
         else:
             print("✗ Connection pool is NOT initialized")
-            exit(1)
+            sys.exit(0)
 
         # Test 2: Get a connection from the pool
         print("\n[Test 2] Getting a connection from the pool...")
@@ -320,27 +344,27 @@ if __name__ == "__main__":
             print("✓ RetrieveData connection opened successfully")
             retriever.close_connection()
             print("✓ RetrieveData connection closed successfully")
-        except Exception as e:
+        except (OperationalError, DatabaseError) as e:
             print(f"⚠  RetrieveData test encountered an issue: {e}")
 
         # Test 6: Multiple connections from pool
         print("\n[Test 6] Testing multiple connections from pool...")
         connections = []
-        num_connections = 3
-        for i in range(num_connections):
+        NUM_CONNECTIONS = 3
+        for i in range(NUM_CONNECTIONS):
             conn = DatabaseConnection.get_connection()
             connections.append(conn)
-            print(f"  ✓ Got connection {i + 1}/{num_connections}")
+            print(f"  ✓ Got connection {i + 1}/{NUM_CONNECTIONS}")
 
         for i, conn in enumerate(connections):
             DatabaseConnection.release_connection(conn)
-            print(f"  ✓ Released connection {i + 1}/{num_connections}")
+            print(f"  ✓ Released connection {i + 1}/{NUM_CONNECTIONS}")
 
         print("\n" + "=" * 60)
         print("✓ All connection tests passed!")
         print("=" * 60)
 
-    except Exception as e:
+    except (OperationalError, DatabaseError) as e:
         print(f"\n✗ Error during testing: {e}")
         print("=" * 60)
-        exit(1)
+        sys.exit(0)

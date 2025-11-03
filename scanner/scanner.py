@@ -11,15 +11,16 @@ This module contains:
 - RegularMarket: Regular market scanner implementation (WORKING)
 - AfterMarket: After market scanner implementation (UNDER DEVELOPMENT - Commented out)
 """
-from db.scanners_db import RetrieveData, UpdateData, InsertData
-from .scrapers import ScanStockAnalysis
-from .apis import SchwabAPI, SearchYahooFinance
-from .utilities import StockQuoteData, NewsItem
-from helpers.helpers import Helpers, DBHelpers
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+
 import logging
 import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from db.scanners_db import InsertData, RetrieveData, UpdateData
+from helpers.helpers import DBHelpers, Helpers
+from .apis import SchwabAPI, SearchYahooFinance
+from .scrapers import ScanStockAnalysis
+from .utilities import NewsItem, StockQuoteData
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,11 +41,11 @@ class StockDataFetcher:
                                 ) -> StockQuoteData:
         """
         Fetch basic quote data from Schwab API.
-        
+
         Parameters:
         - stock_ticker: The ticker symbol of the stock.
         Returns: StockQuoteData object with basic quote information.
-        
+
         Example:
         - Fetches quote data for AAPL
             quote_data = fetch_schwab_quote_data("AAPL")
@@ -57,9 +58,9 @@ class StockDataFetcher:
                 volume=api.volume(),
                 quote_time=api.quote_time()
             )
-        except (KeyError, Exception) as e:
+        except (KeyError, RuntimeError, ValueError, TypeError) as e:
             LOGGER.warning(
-                f"Error fetching Schwab quote data for {stock_ticker}: {e}")
+                "Error fetching Schwab quote data for %s: %s", stock_ticker, e)
             return StockQuoteData(quote_time=datetime.now())
 
     def fetch_schwab_full_data(self, stock_ticker: str) -> StockQuoteData:
@@ -77,9 +78,9 @@ class StockDataFetcher:
                 avg_vol_3_month=api.average_volume(output=30),
                 market_cap=api.market_cap()
             )
-        except (KeyError, Exception) as e:
+        except (KeyError, RuntimeError, ValueError, TypeError) as e:
             LOGGER.warning(
-                f"Error fetching full Schwab data for {stock_ticker}: {e}")
+                "Error fetching full Schwab data for %s: %s", stock_ticker, e)
             return StockQuoteData(quote_time=datetime.now())
 
     def fetch_yahoo_data(self, stock_ticker: str) -> Dict[str, Any]:
@@ -120,7 +121,7 @@ class StockDataFetcher:
                 related_tickers=news.get('relatedTickers')
             )
         except KeyError as e:
-            LOGGER.error(f"Error parsing news item: {e}")
+            LOGGER.error("Error parsing news item: %s", e)
             return None
 
 
@@ -142,14 +143,14 @@ class NewsProcessor:
                              ) -> None:
         """
         Process and insert company news into the database.
-        
+
         Parameters:
         - stock_ticker: The ticker symbol of the stock.
         - stock_uuid: The UUID of the stock in the database.
         - company_news: A list of news items fetched from Yahoo Finance.
-        
+
         Returns: None
-        
+
         Example:
         - Processes and inserts news for a given stock ticker
             process_company_news("AAPL", "some-uuid", news_list)
@@ -238,11 +239,22 @@ class ScannerCore:
         self.news_processor = NewsProcessor(inserter, retriever, self.fetcher)
         self.history_manager = TickerHistoryManager(inserter, retriever)
 
-    def scan_ticker(self, stock_ticker: str, scanner_table: str, market: str,
-                    market_type: str, source: str, position: int):
-        """Main scanner entry point"""
-        print(
-            f"---- << {market_type} >> '{stock_ticker}' from '{source}' ({position}) ----")
+    def scan_ticker(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self, stock_ticker: str, scanner_table: str, market: str,
+        market_type: str, source: str, position: int
+    ):
+        """
+        Scan a stock ticker and update or add its data in the database
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to scan
+            scanner_table (str): Database table for scanner results
+            market (str): Market name for the ticker
+            market_type (str): Type of market (e.g., equities, options)
+            source (str): Source from which the ticker was found
+            position (int): Position or rank of the ticker in the scan
+        """
+        print(f"---- << {market_type} >> '{stock_ticker}' from '{source}' ({position}) ----")
 
         tickers_in_db = self.db_helper.get_tickers_in_db()
 
@@ -290,7 +302,7 @@ class ScannerCore:
                 stock_ticker, stock_uuid, scan.company_news()
             )
 
-        print(f"---- " * 8)
+        print("---- " * 8)
 
     def _update_stale_data(self, stock_ticker: str, scanner_table: str, stock_uuid: str):
         """Update data that's outdated (not from today)"""
@@ -315,7 +327,7 @@ class ScannerCore:
             stock_ticker, stock_uuid, scan.company_news()
         )
 
-        print(f"---- " * 8)
+        print("---- " * 8)
 
     def _add_new_ticker(self, stock_ticker: str, scanner_table: str):
         """Add completely new ticker to database"""
@@ -344,7 +356,7 @@ class ScannerCore:
             stock_ticker, str(stock_uuid), scan.company_news()
         )
 
-        print(f"---- " * 8)
+        print("---- " * 8)
 
     # Database operation helpers
     def _update_scanner_table(self, table: str, stock_uuid: str, data: StockQuoteData):
@@ -477,9 +489,21 @@ class Scanner:
             self.inserter, self.retriever, self.updater, self.helper
         )
 
-    def scan_ticker(self, stock_ticker: str, scanner_table: str, market: str,
-                    market_type: str, source: str, position: int):
-        """Delegate to core scanner"""
+    def scan_ticker(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self, stock_ticker: str, scanner_table: str, market: str,
+        market_type: str, source: str, position: int
+    ):
+        """
+        Delegate ticker scanning to the core scanner logic
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to scan
+            scanner_table (str): Database table for scanner results
+            market (str): Market where the ticker is listed
+            market_type (str): Type of market (e.g., equity, options)
+            source (str): Source of the scan request
+            position (int): Position or rank of the ticker in the scan
+        """
         self.core.scan_ticker(
             stock_ticker, scanner_table, market, market_type, source, position
         )
@@ -508,14 +532,13 @@ class PreMarket(Scanner):
         """Helper to determine scan length"""
         if self.output_length is None:
             return 15
-        elif self.output_length == 'total':
+        if self.output_length == 'total':
             return total_length
-        else:
-            return self.output_length
+        return self.output_length
 
     def stock_analysis(self):
         """Premarket Gainers from StockAnalysis.com"""
-        print(f"---- " * 8)
+        print("---- " * 8)
         length = self.stock_analysis_scanner.premarket_gainers_length()
 
         for i in range(length):
@@ -530,7 +553,7 @@ class PreMarket(Scanner):
     def charles_schwab_pre_market_movers(self, symbol_id: str = 'EQUITY_ALL',
                                          sort: str = 'PERCENT_CHANGE_UP'):
         """Screener from Charles Schwab"""
-        print(f"---- " * 8)
+        print("---- " * 8)
         schwab = SchwabAPI()
         movers = schwab.movers(symbol_id=symbol_id, sort=sort)
 
@@ -559,14 +582,13 @@ class RegularMarket(Scanner):
         """Helper to determine scan length"""
         if self.output_length is None:
             return 15
-        elif self.output_length == 'total':
+        if self.output_length == 'total':
             return total_length
-        else:
-            return self.output_length
+        return self.output_length
 
     def stock_analysis_regular_market_gainers(self):
         """Regular Market Stocks Gainers from StockAnalysis.com"""
-        print(f"---- " * 8)
+        print("---- " * 8)
         data_type = 'gainers'
         length = self.stock_analysis_scanner.regular_market_length(
             data_type=data_type)
@@ -580,7 +602,7 @@ class RegularMarket(Scanner):
 
     def stock_analysis_regular_market_active(self):
         """Regular Market Stocks Active from StockAnalysis.com"""
-        print(f"---- " * 8)
+        print("---- " * 8)
         data_type = 'active'
         length = self.stock_analysis_scanner.regular_market_length(
             data_type=data_type)
@@ -595,7 +617,7 @@ class RegularMarket(Scanner):
     def charles_schwab_regular_market_movers(self, symbol_id: str = 'EQUITY_ALL',
                                              sort: str = 'PERCENT_CHANGE_UP'):
         """Screener from Charles Schwab in Regular Market"""
-        print(f"---- " * 8)
+        print("---- " * 8)
         schwab = SchwabAPI()
         movers = schwab.movers(symbol_id=symbol_id, sort=sort)
 

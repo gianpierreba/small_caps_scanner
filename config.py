@@ -29,7 +29,7 @@ from pathlib import Path
 def load_env_file():
     """Load environment variables from .env file if it exists"""
     try:
-        from dotenv import load_dotenv
+        from dotenv import load_dotenv  # pylint: disable=import-outside-toplevel
         env_path = Path(__file__).parent / '.env'
         if env_path.exists():
             load_dotenv(dotenv_path=env_path)
@@ -48,15 +48,29 @@ load_env_file()
 class DatabaseConfig:
     """Database connection configuration"""
 
-    host: str = field(default_factory=lambda: os.getenv('DB_HOST', 'localhost'))
-    port: int = field(default_factory=lambda: int(os.getenv('DB_PORT', '5432')))
-    name: str = field(default_factory=lambda: os.getenv('DB_NAME', 'trading'))
-    user: str = field(default_factory=lambda: os.getenv('DB_USER', 'postgres'))
-    password: str = field(default_factory=lambda: os.getenv('DB_PASSWORD', ''))
+    host: str = field(
+        default_factory=lambda: os.getenv('DB_HOST', 'localhost')
+    )
+    port: int = field(
+        default_factory=lambda: int(os.getenv('DB_PORT', '5432'))
+    )
+    name: str = field(
+        default_factory=lambda: os.getenv('DB_NAME', 'trading')
+    )
+    user: str = field(
+        default_factory=lambda: os.getenv('DB_USER', 'postgres')
+    )
+    password: str = field(
+        default_factory=lambda: os.getenv('DB_PASSWORD', '')
+    )
 
     # Connection pool settings
-    min_connections: int = field(default_factory=lambda: int(os.getenv('DB_MIN_CONN', '5')))
-    max_connections: int = field(default_factory=lambda: int(os.getenv('DB_MAX_CONN', '20')))
+    min_connections: int = field(
+        default_factory=lambda: int(os.getenv('DB_MIN_CONN', '5'))
+    )
+    max_connections: int = field(
+        default_factory=lambda: int(os.getenv('DB_MAX_CONN', '20'))
+    )
 
     def validate(self) -> list[str]:
         """
@@ -84,7 +98,8 @@ class DatabaseConfig:
 
         if self.max_connections < self.min_connections:
             errors.append(
-                f"DB_MAX_CONN ({self.max_connections}) must be >= DB_MIN_CONN ({self.min_connections})"
+                f"DB_MAX_CONN ({self.max_connections}) "
+                f"must be >= DB_MIN_CONN ({self.min_connections})"
             )
 
         return errors
@@ -109,8 +124,12 @@ class DatabaseConfig:
 class SchwabAPIConfig:
     """Charles Schwab API configuration"""
 
-    app_key: Optional[str] = field(default_factory=lambda: os.getenv('APP_KEY_SCHWAB'))
-    client_secret: Optional[str] = field(default_factory=lambda: os.getenv('CLIENT_SECRET_SCHWAB'))
+    app_key: Optional[str] = field(
+        default_factory=lambda: os.getenv('APP_KEY_SCHWAB')
+    )
+    client_secret: Optional[str] = field(
+        default_factory=lambda: os.getenv('CLIENT_SECRET_SCHWAB')
+    )
 
     def validate(self) -> list[str]:
         """
@@ -134,12 +153,24 @@ class SchwabAPIConfig:
 class OptionalAPIConfig:
     """Optional third-party API configurations"""
 
-    alpha_vantage_key: Optional[str] = field(default_factory=lambda: os.getenv('ALPHA_VANTAGE_API_KEY'))
-    polygon_key: Optional[str] = field(default_factory=lambda: os.getenv('POLYGON_API_KEY'))
-    fmp_key: Optional[str] = field(default_factory=lambda: os.getenv('FMP_API_KEY'))
-    alpaca_client_id: Optional[str] = field(default_factory=lambda: os.getenv('ALPACA_CLIENT_ID'))
-    alpaca_client_secret: Optional[str] = field(default_factory=lambda: os.getenv('ALPACA_CLIENT_SECRET'))
-    intrinio_key: Optional[str] = field(default_factory=lambda: os.getenv('INTRINIO_API_KEY'))
+    alpha_vantage_key: Optional[str] = field(
+        default_factory=lambda: os.getenv('ALPHA_VANTAGE_API_KEY')
+    )
+    polygon_key: Optional[str] = field(
+        default_factory=lambda: os.getenv('POLYGON_API_KEY')
+    )
+    fmp_key: Optional[str] = field(
+        default_factory=lambda: os.getenv('FMP_API_KEY')
+    )
+    alpaca_client_id: Optional[str] = field(
+        default_factory=lambda: os.getenv('ALPACA_CLIENT_ID')
+    )
+    alpaca_client_secret: Optional[str] = field(
+        default_factory=lambda: os.getenv('ALPACA_CLIENT_SECRET')
+    )
+    intrinio_key: Optional[str] = field(
+        default_factory=lambda: os.getenv('INTRINIO_API_KEY')
+    )
 
     def get_configured_apis(self) -> list[str]:
         """
@@ -169,15 +200,25 @@ class ApplicationConfig:
     """Application-level configuration"""
 
     # Scanner settings
-    sleep_time: int = field(default_factory=lambda: int(os.getenv('SCANNER_SLEEP_TIME', '10')))
-    output_length: int = field(default_factory=lambda: int(os.getenv('SCANNER_OUTPUT_LENGTH', '15')))
+    sleep_time: int = field(
+        default_factory=lambda: int(os.getenv('SCANNER_SLEEP_TIME', '10'))
+    )
+    output_length: int = field(
+        default_factory=lambda: int(os.getenv('SCANNER_OUTPUT_LENGTH', '15'))
+    )
 
     # Logging settings
-    log_level: str = field(default_factory=lambda: os.getenv('LOG_LEVEL', 'INFO'))
-    log_format: str = field(default_factory=lambda: os.getenv('LOG_FORMAT', 'text'))  # 'text' or 'json'
+    log_level: str = field(
+        default_factory=lambda: os.getenv('LOG_LEVEL', 'INFO')
+    )
+    log_format: str = field(
+        default_factory=lambda: os.getenv('LOG_FORMAT', 'text') # 'text' or 'json'
+    )
 
     # Environment
-    environment: str = field(default_factory=lambda: os.getenv('ENVIRONMENT', 'development'))
+    environment: str = field(
+        default_factory=lambda: os.getenv('ENVIRONMENT', 'development')
+    )
 
     def validate(self) -> list[str]:
         """
@@ -239,10 +280,18 @@ class Config:
     Aggregates all configuration sections and provides validation.
     """
 
-    database: DatabaseConfig = field(default_factory=DatabaseConfig)
-    schwab_api: SchwabAPIConfig = field(default_factory=SchwabAPIConfig)
-    optional_apis: OptionalAPIConfig = field(default_factory=OptionalAPIConfig)
-    app: ApplicationConfig = field(default_factory=ApplicationConfig)
+    database: DatabaseConfig = field(
+        default_factory=DatabaseConfig
+    )
+    schwab_api: SchwabAPIConfig = field(
+        default_factory=SchwabAPIConfig
+    )
+    optional_apis: OptionalAPIConfig = field(
+        default_factory=OptionalAPIConfig
+    )
+    app: ApplicationConfig = field(
+        default_factory=ApplicationConfig
+    )
 
     def validate(self, require_schwab: bool = True) -> None:
         """
@@ -266,7 +315,9 @@ class Config:
 
         # Raise if any errors found
         if all_errors:
-            error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {err}" for err in all_errors)
+            error_msg = (
+                "Configuration validation failed:\n" + "\n".join(f"  - {err}" for err in all_errors)
+            )
             raise ValueError(error_msg)
 
     def print_summary(self) -> None:
@@ -279,7 +330,8 @@ class Config:
         print(f"  Host: {self.database.host}:{self.database.port}")
         print(f"  Database: {self.database.name}")
         print(f"  User: {self.database.user}")
-        print(f"  Password: {'*' * len(self.database.password) if self.database.password else '(not set)'}")
+        print(f"  Password: {'*' * len(self.database.password) \
+                             if self.database.password else '(not set)'}")
         print(f"  Connection Pool: {self.database.min_connections}-{self.database.max_connections}")
 
         print("\nSchwab API:")

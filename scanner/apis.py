@@ -10,20 +10,24 @@ This module contains:
 - AlpacaAPI: Alpaca API client for most actively traded stocks and top market movers
 - IntrinioAPI: Intrinio API client for market data about top gainers/losers
 """
-from db.scanners_db import RetrieveData, InsertData
-from polygon.rest.models import TickerSnapshot
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
-from helpers.helpers import Helpers
-from polygon import RESTClient
-from typing import Optional
-import yfinance as yf
-import webbrowser
-import requests
-import logging
+
 import base64
-import uuid
+import logging
 import os
+import uuid
+import webbrowser
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import requests
+import yfinance as yf
+
+# Polygon API
+from polygon import RESTClient
+from polygon.rest.models import TickerSnapshot
+
+from db.scanners_db import InsertData, RetrieveData
+from helpers.helpers import Helpers
 
 # Log configuration
 LOGGER = logging.getLogger(__name__)
@@ -56,7 +60,8 @@ class SchwabAPI:
 
     def __init__(self, access_token: str = None, stock_ticker: str = None):
         """
-        Initialize SchwabAPI client, set up authentication and optionally load market data for a given stock ticker
+        Initialize SchwabAPI client, set up authentication and optionally load
+        market data for a given stock ticker
 
         :param access_token: OAuth access token for Schwab API authentication
         :type access_token: str
@@ -106,21 +111,20 @@ class SchwabAPI:
                 self._authenticate()
                 token_data = self._retrieve_latest_token()
                 return token_data['access_token'], token_data['expiry_time']
-            else:
-                token_data = self._retrieve_latest_token()
-                if self._is_token_valid(token_data['access_token']):
-                    return token_data['access_token'], token_data['expiry_time']
-                else:
-                    refreshed_token_data = self._refresh_tokens()
-                    if refreshed_token_data:
-                        return refreshed_token_data['access_token'], refreshed_token_data['expiry_time']
-                    else:
-                        self._authenticate()
-                        token_data = self._retrieve_latest_token()
-                        return token_data['access_token'], token_data['expiry_time']
-        else:
+            token_data = self._retrieve_latest_token()
+            if self._is_token_valid(token_data['access_token']):
+                return token_data['access_token'], token_data['expiry_time']
+            refreshed_token_data = self._refresh_tokens()
+            if refreshed_token_data:
+                return (
+                    refreshed_token_data['access_token'],
+                    refreshed_token_data['expiry_time']
+                )
+            self._authenticate()
             token_data = self._retrieve_latest_token()
             return token_data['access_token'], token_data['expiry_time']
+        token_data = self._retrieve_latest_token()
+        return token_data['access_token'], token_data['expiry_time']
 
     def _has_week_passed(self, timestamp_str: str = None):
         if timestamp_str is None:
@@ -151,13 +155,22 @@ class SchwabAPI:
         }
 
     def _construct_init_auth_url(self) -> str:
-        auth_url = f"https://api.schwabapi.com/v1/oauth/authorize?client_id={self.__class__.APP_KEY_SCHWAB}&redirect_uri={self.redirect_uri}"
-        LOGGER.info(f"Click to authenticate: {auth_url}")
+        auth_url = (
+            f"https://api.schwabapi.com/v1/oauth/authorize"
+            f"?client_id={self.__class__.APP_KEY_SCHWAB}"
+            f"&redirect_uri={self.redirect_uri}"
+        )
+        LOGGER.info("Click to authenticate: %s", auth_url)
         return auth_url
 
     def _construct_headers_and_payload(self, returned_url: str) -> tuple:
-        response_code = f"{returned_url[returned_url.index('code=') + 5: returned_url.index('%40')]}@"
-        credentials = f"{self.__class__.APP_KEY_SCHWAB}:{self.__class__.CLIENT_SECRET_SCHWAB}"
+        code_start = returned_url.index('code=') + 5
+        code_end = returned_url.index('%40')
+        response_code = f"{returned_url[code_start:code_end]}@"
+        credentials = (
+            f"{self.__class__.APP_KEY_SCHWAB}:"
+            f"{self.__class__.CLIENT_SECRET_SCHWAB}"
+        )
         base64_credentials = base64.b64encode(
             credentials.encode("utf-8")).decode("utf-8")
 
@@ -205,8 +218,13 @@ class SchwabAPI:
             table_name="schwab_access.schwab_access_refresh_token", column="refresh_token")[-1][0]
         payload = {"grant_type": "refresh_token",
                    "refresh_token": refresh_token}
+        credentials = (
+            f"{self.__class__.APP_KEY_SCHWAB}:"
+            f"{self.__class__.CLIENT_SECRET_SCHWAB}"
+        )
+        encoded_creds = base64.b64encode(credentials.encode()).decode()
         headers = {
-            "Authorization": f'Basic {base64.b64encode(f"{self.__class__.APP_KEY_SCHWAB}:{self.__class__.CLIENT_SECRET_SCHWAB}".encode()).decode()}',
+            "Authorization": f'Basic {encoded_creds}',
             "Content-Type": "application/x-www-form-urlencoded"
         }
         response = self.session.post(
@@ -231,30 +249,65 @@ class SchwabAPI:
                 'access_token': tokens['access_token'],
                 'expiry_time': current_datetime + timedelta(seconds=tokens['expires_in'])
             }
-        else:
-            LOGGER.error(f"Error refreshing access token: {response.text}")
-            return None
+        LOGGER.error("Error refreshing access token: %s", response.text)
+        return None
 
     def movers(self, symbol_id: str, sort: str) -> dict:
+        """
+        Retrieve market movers data for a given symbol and sort order from the Schwab API
+
+        Parameters:
+            symbol_id (str): Unique identifier for the market symbol to query
+            sort (str): Sort order for movers data (e.g., 'up', 'down')
+
+        Returns:
+            dict: Movers data as a dictionary, or error details if retrieval fails
+        """
         api_url = f"{self.market_data_base_url}/movers/{symbol_id}?sort={sort}"
-        response = requests.get(api_url, headers=self.headers)
+        response = requests.get(
+            api_url,
+            headers=self.headers,
+            timeout=30
+        )
         if response.status_code == 200:
             return response.json()
-        else:
-            return {
-                'status_code': response.status_code,
-                'message': 'Failed to retrieve data',
-                'content': response.text
-            }
+        return {
+            'status_code': response.status_code,
+            'message': 'Failed to retrieve data',
+            'content': response.text
+        }
 
     def market_cap(self, stock_ticker: str = None) -> float:
-        stock_fundamental = self._stock_fundamental if self.stock_ticker else self.stock_fundamental(
-            stock_ticker)
+        """
+        Retrieve the market capitalization value for a given stock ticker.
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to fetch market capitalization for.
+
+        Returns
+            float: Market capitalization value as a float.
+        """
+        stock_fundamental = (
+            self._stock_fundamental if self.stock_ticker
+            else self.stock_fundamental(stock_ticker)
+        )
         return stock_fundamental['instruments'][0]['fundamental']['marketCap']
 
     def average_volume(self, output: int, stock_ticker: str = None):
-        stock_fundamental = self._stock_fundamental if self.stock_ticker else self.stock_fundamental(
-            stock_ticker)
+        """
+        Retrieve the average trading volume for a stock over a specified period
+
+        Parameters
+            output (int): Number of days to average volume over (1, 10, or 30)
+            stock_ticker (str): Stock ticker symbol to fetch volume for (optional)
+
+        Returns:
+            Average trading volume for the specified period, or None if unavailable
+        """
+        stock_fundamental = (
+            self._stock_fundamental if self.stock_ticker
+            else self.stock_fundamental(stock_ticker)
+        )
 
         volume_map = {
             1: 'avg1DayVolume',
@@ -265,37 +318,70 @@ class SchwabAPI:
         return stock_fundamental['instruments'][0]['fundamental'][key] if key else None
 
     def stock_fundamental(self, stock_ticker: str = None):
+        """
+        Retrieve fundamental financial data for a specified stock ticker from the Schwab API
+
+        Parameters
+            stock_ticker (str): Stock ticker symbol to fetch fundamental data for
+
+        Returns:
+            Fundamental data as a dictionary or error details if retrieval fails
+        """
         ticker = self.stock_ticker if self.stock_ticker else stock_ticker
         api_url = f"{self.market_data_base_url}/instruments?symbol={ticker}&projection=fundamental"
-        response = requests.get(api_url, headers=self.headers)
+        response = requests.get(
+            api_url,
+            headers=self.headers,
+            timeout=30
+        )
         if response.status_code == 200:
             return response.json()
-        else:
+        return {
+            'status_code': response.status_code,
+            'message': 'Failed to retrieve data',
+            'content': response.text
+        }
+
+    def quote_single(self, stock_ticker: str = None):
+        """
+        Retrieve real-time quote data for a single stock ticker symbol
+
+        Parameters
+            stock_ticker (str): Stock ticker symbol to fetch quote for (optional)
+
+        Returns:
+            Real-time quote data as a dictionary, or error details if retrieval fails
+        """
+        if stock_ticker is not None:
+            api_url = f"{self.market_data_base_url}/{stock_ticker}/quotes"
+            response = requests.get(
+                api_url,
+                headers=self.headers,
+                timeout=30
+            )
+            if response.status_code == 200:
+                return response.json()
             return {
                 'status_code': response.status_code,
                 'message': 'Failed to retrieve data',
                 'content': response.text
             }
-
-    def quote_single(self, stock_ticker: str = None):
-        if stock_ticker is not None:
-            api_url = f"{self.market_data_base_url}/{stock_ticker}/quotes"
-            response = requests.get(api_url, headers=self.headers)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                return {
-                    'status_code': response.status_code,
-                    'message': 'Failed to retrieve data',
-                    'content': response.text
-                }
-        elif self.stock_ticker is not None:
+        if self.stock_ticker is not None:
             return self._quote_single
-        else:
-            raise ValueError(
-                "stock_ticker needed in constructor or as parameter")
+        raise ValueError(
+            "stock_ticker needed in constructor or as parameter"
+        )
 
     def last_price(self, stock_ticker: str = None) -> Optional[float]:
+        """
+        Retrieve the last traded price for a given stock ticker symbol
+
+        Parameters
+            stock_ticker (str): Stock ticker symbol to fetch the last price for
+
+        Returns:
+            float | None: Last traded price as a float, or None if not available
+        """
         if stock_ticker is not None:
             request = self.quote_single(stock_ticker=stock_ticker)
             try:
@@ -309,6 +395,14 @@ class SchwabAPI:
                 return None
 
     def change_percentage(self, stock_ticker: str = None) -> Optional[float]:
+        """
+        Retrieve the percentage change in price for a given stock ticker symbol
+
+        Parameters
+            stock_ticker (str): Stock ticker symbol to fetch percentage change for
+        Returns:
+            float | None: Percentage change in price as a float, or None if not available
+        """
         if stock_ticker is not None:
             request = self.quote_single(stock_ticker=stock_ticker)
             try:
@@ -322,13 +416,30 @@ class SchwabAPI:
                 return None
 
     def volume(self, stock_ticker: str = None) -> Optional[float]:
+        """
+        Retrieve the total trading volume for a given stock ticker symbol
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to fetch volume for
+
+        Returns:
+            float | None: Total trading volume as a float, or None if not available
+        """
         if stock_ticker is not None:
             request = self.quote_single(stock_ticker=stock_ticker)
             return request[stock_ticker]['quote']['totalVolume']
-        else:
-            return self._quote_single[self.stock_ticker]['quote']['totalVolume']
+        return self._quote_single[self.stock_ticker]['quote']['totalVolume']
 
     def quote_time(self, stock_ticker: str = None) -> datetime:
+        """
+        Retrieve the timestamp of the latest quote for a given stock ticker symbol
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to fetch quote time for (optional)
+
+        Returns:
+            datetime: Datetime object representing the quote time
+        """
         helper = Helpers()
         if stock_ticker:
             quote_data = self.quote_single(stock_ticker=stock_ticker)
@@ -338,11 +449,20 @@ class SchwabAPI:
         try:
             quote_time = quote_data['quote']['quoteTime']
         except KeyError as e:
-            raise KeyError(f"Missing key in quote data: {e}")
+            raise KeyError(f"Missing key in quote data: {e}") from e
 
         return helper.detect_and_convert_timestamp(timestamp=quote_time)
 
     def company_name(self, stock_ticker: str = None) -> Optional[str]:
+        """
+        Retrieve the company name for a given stock ticker symbol
+
+        Parameters:
+            stock_ticker (str): Stock ticker symbol to look up
+
+        Returns:
+            str | None: The company name associated with the stock ticker, or None if not found
+        """
         if stock_ticker is not None:
             request = self.quote_single(stock_ticker=stock_ticker)
             try:
@@ -364,78 +484,152 @@ class SearchYahooFinance:
     """Yahoo Finance API wrapper with lazy loading"""
 
     def __init__(self, ticker: str = None, company_name: str = None):
+        """
+        Initialize a SearchYahooFinance instance with optional ticker and company name
+
+        Parameters
+            ticker (str): Stock ticker symbol for the company
+            company_name (str): Name of the company to search
+        """
         self.ticker = ticker
         self.company_name = company_name
         self.yahoo_finance_api = None
         self.yahoo_finance_api_info = None
 
     def _initialize_api(self):
+        """
+        Initialize the Yahoo Finance API client and
+        fetch ticker information if not already initialized
+        """
         if not self.yahoo_finance_api and self.ticker:
             self.yahoo_finance_api = yf.Ticker(self.ticker)
             self.yahoo_finance_api_info = self.yahoo_finance_api.info
 
     def _get_info(self, key):
+        """
+        Retrieve a value from Yahoo Finance API info by key after ensuring API initialization
+        """
         self._initialize_api()
         return self.yahoo_finance_api_info.get(key, None)
 
     def company_country(self):
+        """
+        Retrieve the country where the company is based from Yahoo Finance data
+        """
         return self._get_info('country')
 
     def website(self):
+        """
+        Retrieve the company's website URL from Yahoo Finance data
+        """
         return self._get_info('website')
 
     def business_summary(self):
+        """
+        Retrieve a detailed summary of the company's business operations
+        """
         return self._get_info('longBusinessSummary')
 
     def short_ratio_date(self):
+        """
+        Retrieve the date of the latest short interest ratio for the current ticker
+        """
         return self._get_info('dateShortInterest')
 
     def industry(self):
+        """
+        Retrieve the industry information for the current ticker
+        """
         return self._get_info('industry')
 
     def sector(self):
+        """
+        Retrieve the sector information for the current ticker
+        """
         return self._get_info('sector')
 
     def operating_cash_flow(self):
+        """
+        Retrieve the operating cash flow value for the current ticker
+        """
         return self._get_info('operatingCashflow')
 
     def shares_short(self):
+        """
+        Retrieve the number of shares currently shorted for the ticker
+        """
         return self._get_info('sharesShort')
 
     def shares_short_previous_month_date(self):
+        """
+        Retrieve the date of the previous month's short interest for the current ticker
+        """
         return self._get_info('sharesShortPreviousMonthDate')
 
     def shares_short_prior_month(self):
+        """
+        Retrieve the number of shares shorted in the prior month for the current ticker
+        """
         return self._get_info('sharesShortPriorMonth')
 
     def shares_percent_shares_outstanding(self):
+        """
+        Retrieve the percentage of shares outstanding that are currently shorted for the ticker
+        """
         return self._get_info('sharesPercentSharesOut')
 
     def short_percent_float(self):
+        """
+        Retrieve the percentage of float shares that are currently shorted for the ticker
+        """
         return self._get_info('shortPercentOfFloat')
 
     def short_ratio(self):
+        """
+        Retrieve the short interest ratio for the current ticker
+        """
         return self._get_info('shortRatio')
 
     def avg_volume_10d(self):
+        """
+        Retrieve the average daily trading volume over the past 10 days for the current ticker
+        """
         return self._get_info('averageVolume10days')
 
     def avg_volume_3m(self):
+        """
+        Retrieve the average daily trading volume over the past 3 months for the current ticker
+        """
         return self._get_info('averageVolume')
 
     def held_institutions(self):
+        """
+        Retrieve the percentage of shares held by institutional investors for the current ticker
+        """
         return self._get_info('heldPercentInstitutions')
 
     def held_insiders(self):
+        """
+        Retrieve the percentage of shares held by company insiders for the current ticker
+        """
         return self._get_info('heldPercentInsiders')
 
     def market_cap(self):
+        """
+        Retrieve the market capitalization value for the current ticker
+        """
         return self._get_info('marketCap')
 
     def stock_float(self):
+        """
+        Retrieve the number of float shares available for trading for the current ticker
+        """
         return self._get_info('floatShares')
 
     def company_news(self):
+        """
+        Retrieve the latest news articles related to the company from Yahoo Finance
+        """
         self._initialize_api()
         return self.yahoo_finance_api.news
 
@@ -463,9 +657,11 @@ class AlphaVantageAPI:
         self.api_key = api_key or self.__class__.ALPHA_VANTAGE_API_KEY
 
         if not self.api_key:
-            raise ValueError(
-                "Alpha Vantage API key required. Set ALPHA_VANTAGE_API_KEY environment variable or pass api_key parameter"
+            msg = (
+                "Alpha Vantage API key required. Set ALPHA_VANTAGE_API_KEY "
+                "environment variable or pass api_key parameter"
             )
+            raise ValueError(msg)
 
         self.base_url = 'https://www.alphavantage.co/query'
         self.session = requests.Session()
@@ -509,11 +705,11 @@ class AlphaVantageAPI:
             elif response.status_code == 500:
                 LOGGER.error("Internal server error at Alpha Vantage")
             else:
-                LOGGER.error(f"HTTP error: {e}")
+                LOGGER.error("HTTP error: %s", e)
             raise
 
         except requests.exceptions.RequestException as e:
-            LOGGER.error(f"Request failed: {e}")
+            LOGGER.error("Request failed: %s", e)
             raise
 
     def get_top_gainers_losers(self) -> list[str]:
@@ -573,9 +769,11 @@ class PolygonAPI:
         self.api_key = api_key or self.__class__.POLYGON_API_KEY
 
         if not self.api_key:
-            raise ValueError(
-                "Polygon API key required. Set POLYGON_API_KEY environment variable or pass api_key parameter"
+            msg = (
+                "Polygon API key required. Set POLYGON_API_KEY "
+                "environment variable or pass api_key parameter"
             )
+            raise ValueError(msg)
 
         self.client = RESTClient(self.api_key)
 
@@ -595,13 +793,18 @@ class PolygonAPI:
             result = []
             for item in tickers:
                 # Verify this is a TickerSnapshot and a float
-                if isinstance(item, TickerSnapshot) and isinstance(item.todays_change_percent, float):
+                if (isinstance(item, TickerSnapshot)
+                    and
+                        isinstance(item.todays_change_percent, float)):
                     result.append(item.ticker)
 
             return result
 
-        except Exception as e:
-            print(f"Error fetching top gainers: {e}")
+        except requests.exceptions.RequestException as e:
+            LOGGER.error("Error fetching losers: %s", e)
+            return []
+        except (KeyError, TypeError, ValueError) as e:
+            LOGGER.error("Error parsing losers data: %s", e)
             return []
 
 
@@ -613,7 +816,8 @@ class FMPApi:
     """
     Financial Modeling Prep (FMP) API client for market data - FREE and PAID SERVICE
 
-    This is a FREE and PAID API service. Sign up at https://financialmodelingprep.com/developer/docs/pricing/
+    This is a FREE and PAID API service.
+    Sign up at https://financialmodelingprep.com/developer/docs/pricing/
 
     Features:
     - Top gainers/losers by stock exchange
@@ -630,9 +834,11 @@ class FMPApi:
         """
         self.api_key = api_key or self.__class__.FMP_API_KEY
         if not self.api_key:
-            raise ValueError(
-                "FMP API key required. Set FMP_API_KEY environment variable or pass api_key parameter"
+            msg = (
+                "FMP API key required. Set FMP_API_KEY "
+                "environment variable or pass api_key parameter"
             )
+            raise ValueError(msg)
         self.base_url = 'https://financialmodelingprep.com/stable'
         self.session = requests.Session()
         # HTTP Basic Auth with API key as username
@@ -675,11 +881,11 @@ class FMPApi:
             elif response.status_code == 500:
                 LOGGER.error("Internal server error at FMP")
             else:
-                LOGGER.error(f"HTTP error: {e}")
+                LOGGER.error("HTTP error: %s", e)
             raise
 
         except requests.exceptions.RequestException as e:
-            LOGGER.error(f"Request failed: {e}")
+            LOGGER.error("Request failed: %s", e)
             raise
 
     def get_biggest_gainers(self) -> list[str]:
@@ -716,7 +922,8 @@ class AlpacaAPI:
     """
     Alpaca API client for market data - PAID SERVICE
 
-    This is a PAID API service. Sign up at https://alpaca.markets/docs/api-documentation/api-v2/market-data/
+    This is a PAID API service.
+    Sign up at https://alpaca.markets/docs/api-documentation/api-v2/market-data/
 
     Features:
     - Top gainers and losers by stock exchange
@@ -735,21 +942,23 @@ class AlpacaAPI:
         self.alpaca_client_id = alpaca_client_id or self.__class__.ALPACA_CLIENT_ID
 
         if not alpaca_client_id:
-            raise ValueError(
-                "Alpaca Client ID required. Set ALPACA_CLIENT_ID environment variable or pass alpaca_client_id parameter"
+            msg = (
+                "Alpaca Client ID required. Set ALPACA_CLIENT_ID "
+                "environment variable or pass alpaca_client_id parameter"
             )
+            raise ValueError(msg)
 
         self.alpaca_client_secret = alpaca_client_secret or self.__class__.ALPACA_CLIENT_SECRET
 
         if not alpaca_client_secret:
-            raise ValueError(
-                "Alpaca Client Secret required. Set ALPACA_CLIENT_SECRET environment variable or pass alpaca_client_secret parameter"
+            msg = (
+                "Alpaca Client Secret required. Set ALPACA_CLIENT_SECRET "
+                "environment variable or pass alpaca_client_secret parameter"
             )
+            raise ValueError(msg)
 
         self.base_url = 'https://data.alpaca.markets/v1beta1'
         self.session = requests.Session()
-        # HTTP Basic Auth with API key as username
-        self.session.auth = (self.api_key, '')
 
     def _make_request(
         self,
@@ -799,11 +1008,11 @@ class AlpacaAPI:
             elif response.status_code == 500:
                 LOGGER.error("Internal server error at Alpaca")
             else:
-                LOGGER.error(f"HTTP error: {e}")
+                LOGGER.error("HTTP error: %s", e)
             raise
 
         except requests.exceptions.RequestException as e:
-            LOGGER.error(f"Request failed: {e}")
+            LOGGER.error("Request failed: %s", e)
             raise
 
     def top_market_movers(
@@ -824,7 +1033,7 @@ class AlpacaAPI:
         Example:
             >>> api = Alpaca()
             >>> gainers = api.top_market_movers(
-            ...     market_type='stocks', 
+            ...     market_type='stocks',
             ...     top=10
             ... )
             >>> print(gainers)
@@ -918,14 +1127,17 @@ class IntrinioAPI:
         Initialize Intrinio API client
 
         Args:
-            api_key (string, optional): Your Intrinio API key. Defaults to 'INTRINIO_API_KEY' env variable.
+            api_key (string, optional): Your Intrinio API key.
+            Defaults to 'INTRINIO_API_KEY' env variable.
         """
         self.api_key = api_key or self.__class__.INTRINIO_API_KEY
 
         if not self.api_key:
-            raise ValueError(
-                "Intrinio API key required. Set INTRINIO_API_KEY environment variable or pass api_key parameter"
+            msg = (
+                "Intrinio API key required. Set INTRINIO_API_KEY "
+                "environment variable or pass api_key parameter"
             )
+            raise ValueError(msg)
 
         self.base_url = 'https://api-v2.intrinio.com'
         self.session = requests.Session()
@@ -965,11 +1177,11 @@ class IntrinioAPI:
             elif response.status_code == 429:
                 LOGGER.error("Rate limit exceeded")
             else:
-                LOGGER.error(f"HTTP error: {e}")
+                LOGGER.error("HTTP error: %s", e)
             raise
 
         except requests.exceptions.RequestException as e:
-            LOGGER.error(f"Request failed: {e}")
+            LOGGER.error("Request failed: %s", e)
             raise
 
     def get_stock_exchange_gainers(
@@ -1000,7 +1212,7 @@ class IntrinioAPI:
         Example:
             >>> api = IntrinioAPI()
             >>> gainers = api.get_stock_exchange_gainers(
-            ...     identifier='USCOMP', 
+            ...     identifier='USCOMP',
             ...     min_price=5
             ... )
             >>> print(gainers[:10])
@@ -1031,12 +1243,15 @@ class IntrinioAPI:
                     tickers.append(ticker)
 
             LOGGER.info(
-                f"Retrieved {len(tickers)} gainers from {identifier}"
+                "Retrieved %d gainers from %s", len(tickers), identifier
             )
             return tickers
 
-        except Exception as e:
-            LOGGER.error(f"Error fetching gainers: {e}")
+        except requests.exceptions.RequestException as e:
+            LOGGER.error("Error fetching gainers: %s", e)
+            return []
+        except (KeyError, TypeError, ValueError) as e:
+            LOGGER.error("Error parsing gainers data: %s", e)
             return []
 
     def get_stock_exchange_losers(
@@ -1083,10 +1298,13 @@ class IntrinioAPI:
                     tickers.append(ticker)
 
             LOGGER.info(
-                f"Retrieved {len(tickers)} losers from {identifier}"
+                "Retrieved %d losers from %s", len(tickers), identifier
             )
             return tickers
 
-        except Exception as e:
-            LOGGER.error(f"Error fetching losers: {e}")
+        except requests.exceptions.RequestException as e:
+            LOGGER.error("Error fetching losers: %s", e)
+            return []
+        except (KeyError, TypeError, ValueError) as e:
+            LOGGER.error("Error parsing losers data: %s", e)
             return []

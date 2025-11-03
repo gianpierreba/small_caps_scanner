@@ -1,12 +1,53 @@
-from scanner.executor import start_scanner_thread, stop_all_scanners
-from scanner.config import MarketType
-from scanner.utilities import Searching
-from config import config, validate_config
-from __version__ import __version__
+"""
+Small Caps Stock Market Scanner - Main Entry Point
+
+This module serves as the main entry point for the stock market scanner application.
+It orchestrates the execution of pre-market and regular-market for small-cap stocks.
+
+Features:
+    - Multi-threaded scanner execution for different market sessions
+    - Cross-platform compatibility (Windows, Linux, macOS)
+    - Graceful shutdown handling via signal handlers
+    - Terms of Service consent flow for web scraping compliance
+    - Configuration validation and API integration support
+
+Usage:
+    Run the scanner with default configuration:
+        $ python main.py
+
+    The application will:
+        1. Validate configuration from .env file
+        2. Display Terms of Service warning and request consent
+        3. Start configured market scanners (pre-market and regular-market)
+        4. Run continuously until Ctrl + C is pressed
+
+Configuration:
+    Set up your environment variables in .env file:
+        - SCHWAB_APP_KEY: Charles Schwab API credentials
+        - SCHWAB_APP_SECRET: Charles Schwab API secret
+        - Other optional API keys (Alpha Vantage, Polygon.io, etc.)
+
+    See .env.example for complete configuration template.
+
+Note:
+    This application includes web scraping functionality that requires compliance
+    with Terms of Service. Users must provide explicit consent before usage.
+    Official API integrations are recommended over web scraping.
+
+Author: Gianpierre Benites
+License: See LICENSE file
+Version: See __version__.py
+"""
+import platform
 import signal
 import sys
 import time
-import platform
+
+from __version__ import __version__
+from config import config, validate_config
+from scanner.config import MarketType
+from scanner.executor import start_scanner_thread, stop_all_scanners
+from scanner.utilities import Searching
 
 
 def searching_ticker(stock_ticker: str):
@@ -17,7 +58,7 @@ def searching_ticker(stock_ticker: str):
     search_stock.search_stock()
 
 
-def signal_handler(sig, frame):
+def signal_handler():
     """Handle SIGINT (Ctrl+C) to stop all scanners gracefully."""
     print("\nStopping all scanners...")
     stop_all_scanners()
@@ -95,10 +136,9 @@ BY TYPING 'I AGREE' BELOW, YOU ACKNOWLEDGE THAT:
             print("\n✓ Consent recorded. Starting scanners...\n")
             time.sleep(2)  # Give user time to read the confirmation
             return True
-        else:
-            print("\n✗ Consent not provided. Exiting for your legal protection.")
-            print("Consider using the official API integrations instead (see README.md).\n")
-            return False
+        print("\n✗ Consent not provided. Exiting for your legal protection.")
+        print("Consider using the official API integrations instead (see README.md).\n")
+        return False
 
     except KeyboardInterrupt:
         print("\n\n✗ Consent not provided. Exiting for your legal protection.")
@@ -159,8 +199,8 @@ if __name__ == "__main__":
 
     # Regular-Market Scanners - ACTIVE
     # Comment this out if you only want Pre-Market scanner
-    start_scanner_thread(market_type=MarketType.REGULAR_MARKET,
-                         sleep_time=sleep_time)
+    # start_scanner_thread(market_type=MarketType.REGULAR_MARKET,
+    #                      sleep_time=sleep_time)
 
     # After-Market Scanners - DISABLED (UNDER DEVELOPMENT)
     # ⚠️ NOTICE: After-market scanner is incomplete and currently disabled
@@ -182,12 +222,12 @@ if __name__ == "__main__":
         try:
             while True:
                 time.sleep(1)
-        except KeyboardInterrupt:
-            signal_handler(None, None)
+        except (KeyboardInterrupt, TypeError):
+            signal_handler()
     else:
         # On Unix systems, use signal.pause()
-        signal.pause()
+        signal.pause()  # pylint: disable=no-member
 
-    """Search for a specific stock ticker"""
+    # Search for a specific stock ticker
     # stock_ticker = ''
     # searching_ticker(stock_ticker=stock_ticker)
