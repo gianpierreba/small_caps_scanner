@@ -31,7 +31,10 @@ class Helpers:
     def __init__(self) -> None:
         pass
 
-    def search_ticker(self, company_name: str) -> str:
+    def search_ticker(
+            self,
+            company_name: str
+        ) -> Optional[str]:
         """
         Search for a stock ticker symbol using a company name
 
@@ -49,7 +52,9 @@ class Helpers:
             return None
 
         # Helper to search and extract ticker symbols
-        def get_tickers(company_name):
+        def get_tickers(
+                company_name
+            ):
             yfinance = "https://query2.finance.yahoo.com/v1/finance/search"
             user_agent = (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -88,7 +93,10 @@ class Helpers:
 
         return None
 
-    def format_number(self, num):
+    def format_number(
+            self,
+            num
+        ):
         """
         This function is designed to convert a numerical value (either an integer or a float)
         into a human-readable string with appropriate suffixes
@@ -114,7 +122,10 @@ class Helpers:
             formatted_num = f"{num:.2f}"
         return formatted_num
 
-    def format_percentage(self, value):
+    def format_percentage(
+            self,
+            value
+        ):
         """
         The format_percentage function is intended to convert a float
         value into a percentage string, formatted to two decimal places.
@@ -130,8 +141,10 @@ class Helpers:
         return f"{value * 100:.2f} %"
 
     def detect_and_convert_timestamp(
-        self, timestamp: int | float, resultado: str = "date"
-    ) -> str | datetime:
+            self,
+            timestamp: int | float,
+            resultado: str = "date"
+        ) -> str | datetime:
         """
         Detects whether a given timestamp is in Unix format (seconds)
         or in milliseconds, and converts it to a readable date.
@@ -171,7 +184,10 @@ class Helpers:
         msg = "Invalid value for 'resultado'. Choose 'date' or 'type'."
         raise ValueError(msg)
 
-    def convert_percentage_to_numeric(self, percentage_str):
+    def convert_percentage_to_numeric(
+            self,
+            percentage_str
+        ):
         """
         Convert a percentage string to its numeric decimal equivalent
 
@@ -189,7 +205,10 @@ class Helpers:
 
         return numeric_value
 
-    def convert_string_to_numeric(self, value):
+    def convert_string_to_numeric(
+            self,
+            value
+        ):
         """
         Convert string values to appropriate numeric types
 
@@ -214,7 +233,10 @@ class Helpers:
             print(f"Error converting value: {e}")
             return None
 
-    def _get_cik(self, ticker: str) -> Optional[str]:
+    def _get_cik(
+            self,
+            ticker: str
+        ) -> Optional[str]:
         """
         The function retrieves the Central Index Key (CIK) number
         for a given company's ticker symbol.
@@ -246,7 +268,10 @@ class Helpers:
                 return company["cik_str"]
         return None
 
-    def _get_and_update_cik(self, stock_ticker: str):
+    def _get_and_update_cik(
+            self,
+            stock_ticker: str
+        ):
         # Retrieve cik_number from the database for the given market
         cik_number = RETRIEVE.retrieve_data(
             table_name="equities.stock_data",
@@ -260,7 +285,9 @@ class Helpers:
             return cik_number[0][0]
 
         # If cik_number does not exist, fetch it and update the database
-        cik_number = self._get_cik(ticker=stock_ticker)
+        cik_number = self._get_cik(
+            ticker=stock_ticker
+        )
 
         # Update cik_number in the database for the given market
         update_data_params = {"cik_number": cik_number}
@@ -273,15 +300,23 @@ class Helpers:
 
         return cik_number
 
-    def cik_number(self, stock_ticker: str, search_ticker: bool = False):
+    def cik_number(
+            self,
+            stock_ticker: str,
+            search_ticker: bool = False
+        ):
         """Looking for CIK Number"""
 
         # If search_ticker is False, use the database; otherwise, search for cik_number
         if not search_ticker:
-            return self._get_and_update_cik(stock_ticker)
+            return self._get_and_update_cik(
+                stock_ticker
+            )
 
         # If search_ticker is True, directly fetch cik_number
-        cik_number = self._get_cik(ticker=stock_ticker)
+        cik_number = self._get_cik(
+            ticker=stock_ticker
+        )
         return str(cik_number)
 
 
@@ -297,7 +332,10 @@ class DBHelpers:
     def __init__(self) -> None:
         pass
 
-    def get_tickers_in_db(self, market: str = None) -> list:
+    def get_tickers_in_db(
+            self,
+            market: Optional[str] = None
+        ) -> list:
         """
         Retrieve the list of tickers from the specified market's database table.
 
@@ -320,7 +358,9 @@ class DBHelpers:
         }
 
         # Validate the market and retrieve the table name
-        table_name = valid_markets.get(market)
+        table_name = valid_markets.get(
+            market
+        )
         if table_name is None and market is not None:
             msg_value_error = (
                 f"Invalid market: {market}. "
@@ -329,12 +369,19 @@ class DBHelpers:
             raise ValueError(msg_value_error)
 
         # Retrieve tickers from the database
-        data = RETRIEVE.retrieve_data(column="ticker", table_name=table_name)
+        data = RETRIEVE.retrieve_data(
+            column="ticker",
+            table_name=table_name
+        )
 
         # Return the list of tickers
         return [row[0] for row in data]
 
-    def get_uuid(self, ticker: str, market: str) -> str:
+    def get_uuid(
+            self,
+            ticker: str,
+            market: str
+        ) -> str:
         """
         Retrieve the UUID for a given ticker from the specified market's table.
 
@@ -350,6 +397,7 @@ class DBHelpers:
             ValueError: If the market name is invalid.
             LookupError: If no UUID is found for the ticker.
         """
+
         # Define valid markets and corresponding table names
         valid_markets = {
             "equities": "equities.stock_data",

@@ -7,8 +7,9 @@ efficiently using a threaded connection pool.
 import atexit
 import os
 import sys
+from typing import Optional
+from psycopg2 import DatabaseError, OperationalError
 from psycopg2.pool import ThreadedConnectionPool
-from psycopg2 import OperationalError, DatabaseError
 
 # Import centralized configuration
 try:
@@ -27,15 +28,22 @@ class DatabaseConnection:
     connection_pool = None
 
     @classmethod
-    def initialize_pool(cls, minconn, maxconn, **db_params):
+    def initialize_pool(
+        cls,
+        minconn,
+        maxconn,
+        **db_params
+    ):
         """
         Initialize the connection pool.
         This should be called once, typically when the application starts.
         """
         if cls.connection_pool is None:
-            cls.connection_pool = ThreadedConnectionPool(minconn=minconn,
-                                                         maxconn=maxconn,
-                                                         **db_params)
+            cls.connection_pool = ThreadedConnectionPool(
+                minconn=minconn,
+                maxconn=maxconn,
+                **db_params
+            )
 
     @classmethod
     def close_pool(cls):
@@ -56,7 +64,10 @@ class DatabaseConnection:
         return cls.connection_pool.getconn()
 
     @classmethod
-    def release_connection(cls, connection):
+    def release_connection(
+        cls,
+        connection
+    ):
         """
         Return a connection to the pool.
 
@@ -96,12 +107,18 @@ class DatabaseOperation:
         if self.cursor:
             self.cursor.close()
         if self.conn:
-            DatabaseConnection.release_connection(self.conn)
+            DatabaseConnection.release_connection(
+                self.conn
+            )
 
 
 class InsertData(DatabaseOperation):
     """Insert data into DB"""
-    def insert_data(self, table: str, data: dict):
+    def insert_data(
+            self,
+            table: str,
+            data: dict
+        ):
         """
         Insert data into the specified table.
 
@@ -137,10 +154,10 @@ class RetrieveData(DatabaseOperation):
     def retrieve_data(
             self,
             table_name: str,
-            condition_column: str = None,
-            condition_value: str = None,
-            column: str = None,
-            fetch_all: bool = True
+            condition_column: Optional[str] = None,
+            condition_value: Optional[str] = None,
+            column: Optional[str] = None,
+            fetch_all: Optional[bool] = True
         ) -> list:
         """
         Retrieve data from a table with an optional WHERE clause using parameterized queries.

@@ -11,6 +11,7 @@ See LICENSE and README.md for full legal disclaimers.
 import logging
 import warnings
 import requests
+from typing import Optional
 from bs4 import BeautifulSoup
 
 # Configure logging
@@ -82,7 +83,10 @@ class ScanStockAnalysis:
                 "table", class_="symbol-table svelte-1ro3niy", attrs={"id": "main-table"}
             ).find("tbody").find_all("tr", class_="svelte-1ro3niy")
 
-    def _initialize_regular_market(self, data_type):
+    def _initialize_regular_market(
+            self,
+            data_type
+        ):
         if data_type == 'gainers' and not self._name_lines_regular_market_gainers:
             url = "https://stockanalysis.com/markets/gainers/"
             response = requests.get(
@@ -107,12 +111,21 @@ class ScanStockAnalysis:
                 "table", class_="symbol-table svelte-1ro3niy", attrs={"id": "main-table"}
             ).find("tbody").find_all("tr", class_="svelte-1ro3niy")
 
-    def _get_premarket_gainer_info(self, position: int, column: int):
+    def _get_premarket_gainer_info(
+            self,
+            position: int,
+            column: int
+        ):
         self._initialize_premarket_gainers()
         row = self._name_lines_premarket_gainers[position]
         return row.find_all("td")[column].get_text(strip=True)
 
-    def _get_regular_market_info(self, position: int, column: int, data_type: str):
+    def _get_regular_market_info(
+            self,
+            position: int,
+            column: int,
+            data_type: str
+        ):
         self._initialize_regular_market(data_type)
         if data_type == 'gainers':
             row = self._name_lines_regular_market_gainers[position]
@@ -122,14 +135,19 @@ class ScanStockAnalysis:
             return row.find_all("td")[column].get_text(strip=True)
         raise ValueError(f"Invalid data_type: '{data_type}'. Must be 'gainers' or 'active'")
 
-    def regular_market_length(self, data_type: str):
+    def regular_market_length(
+            self,
+            data_type: str
+        ):
         """
         Return the number of rows for regular market gainers or active stocks
 
         Parameters:
             data_type (str): Data type
         """
-        self._initialize_regular_market(data_type)
+        self._initialize_regular_market(
+            data_type=data_type
+        )
         if data_type == 'gainers':
             return len(self._name_lines_regular_market_gainers)
         if data_type == 'active':
@@ -143,7 +161,12 @@ class ScanStockAnalysis:
         self._initialize_premarket_gainers()
         return len(self._name_lines_premarket_gainers)
 
-    def ticker(self, position: int, market: str, data_type: str = None):
+    def ticker(
+            self,
+            position: int,
+            market: str,
+            data_type: Optional[str] = None
+        ):
         """
         Retrieve ticker information for a given position from pre-market or regular market data
 
@@ -152,16 +175,23 @@ class ScanStockAnalysis:
             market (str): Market type ('pre_market' or 'regular_market')
             data_type (str): Type of regular market data ('gainers' or 'active'),
                 required for regular market
-        
+
         Returns:
             Ticker symbol or related information for the specified position
         """
         if market == 'pre_market' and data_type is None:
-            return self._get_premarket_gainer_info(position, 1)
+            return self._get_premarket_gainer_info(
+                position=position,
+                column=1
+            )
         if market == 'regular_market':
             if data_type is None:
                 raise ValueError(
                     "'data_type' must be provided for 'regular_market'")
-            return self._get_regular_market_info(position=position, column=1, data_type=data_type)
+            return self._get_regular_market_info(
+                position=position,
+                column=1,
+                data_type=data_type
+            )
         raise ValueError(
             "market must be either 'pre_market' or 'regular_market'")

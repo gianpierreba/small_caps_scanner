@@ -36,9 +36,10 @@ class StockDataFetcher:
         """Initialize StockDataFetcher with helper utilities."""
         self.helper = helper
 
-    def fetch_schwab_quote_data(self,
-                                stock_ticker: str
-                                ) -> StockQuoteData:
+    def fetch_schwab_quote_data(
+            self,
+            stock_ticker: str
+        ) -> StockQuoteData:
         """
         Fetch basic quote data from Schwab API.
 
@@ -51,7 +52,9 @@ class StockDataFetcher:
             quote_data = fetch_schwab_quote_data("AAPL")
         """
         try:
-            api = SchwabAPI(stock_ticker=stock_ticker)
+            api = SchwabAPI(
+                stock_ticker=stock_ticker
+            )
             return StockQuoteData(
                 last_price=api.last_price(),
                 change_percentage=api.change_percentage(),
@@ -63,7 +66,10 @@ class StockDataFetcher:
                 "Error fetching Schwab quote data for %s: %s", stock_ticker, e)
             return StockQuoteData(quote_time=datetime.now())
 
-    def fetch_schwab_full_data(self, stock_ticker: str) -> StockQuoteData:
+    def fetch_schwab_full_data(
+            self,
+            stock_ticker: str
+        ) -> StockQuoteData:
         """Fetch complete data including fundamentals from Schwab API"""
         try:
             api = SchwabAPI(stock_ticker=stock_ticker)
@@ -83,7 +89,10 @@ class StockDataFetcher:
                 "Error fetching full Schwab data for %s: %s", stock_ticker, e)
             return StockQuoteData(quote_time=datetime.now())
 
-    def fetch_yahoo_data(self, stock_ticker: str) -> Dict[str, Any]:
+    def fetch_yahoo_data(
+            self,
+            stock_ticker: str
+        ) -> Dict[str, Any]:
         """Fetch additional data from Yahoo Finance"""
         scan = SearchYahooFinance(ticker=stock_ticker)
 
@@ -106,7 +115,10 @@ class StockDataFetcher:
             'short_ratio_date': scan.short_ratio_date()
         }
 
-    def parse_news_item(self, news: Dict) -> Optional[NewsItem]:
+    def parse_news_item(
+            self,
+            news: Dict
+        ) -> Optional[NewsItem]:
         """Parse a news item from Yahoo Finance API"""
         try:
             return NewsItem(
@@ -128,7 +140,12 @@ class StockDataFetcher:
 class NewsProcessor:
     """Handles company news processing and storage"""
 
-    def __init__(self, inserter: InsertData, retriever: RetrieveData, fetcher: StockDataFetcher):
+    def __init__(
+            self,
+            inserter: InsertData,
+            retriever: RetrieveData,
+            fetcher: StockDataFetcher
+        ):
         """
         Initialize NewsProcessor with database inserter, retriever, and data fetcher.
         """
@@ -136,11 +153,12 @@ class NewsProcessor:
         self.retriever = retriever
         self.fetcher = fetcher
 
-    def process_company_news(self,
-                             stock_ticker: str,
-                             stock_uuid: str,
-                             company_news: List[Dict]
-                             ) -> None:
+    def process_company_news(
+            self,
+            stock_ticker: str,
+            stock_uuid: str,
+            company_news: List[Dict]
+        ) -> None:
         """
         Process and insert company news into the database.
 
@@ -194,11 +212,20 @@ class NewsProcessor:
 class TickerHistoryManager:
     """Manages ticker history records"""
 
-    def __init__(self, inserter: InsertData, retriever: RetrieveData):
+    def __init__(
+            self,
+            inserter: InsertData,
+            retriever: RetrieveData
+        ):
         self.inserter = inserter
         self.retriever = retriever
 
-    def add_today_if_needed(self, stock_uuid: str, stock_ticker: str, quote_time: datetime):
+    def add_today_if_needed(
+            self,
+            stock_uuid: str,
+            stock_ticker: str,
+            quote_time: datetime
+        ):
         """Add today's date to ticker_history if not already present"""
         existing_dates = self.retriever.retrieve_data(
             column="date",
@@ -215,7 +242,9 @@ class TickerHistoryManager:
                 'week': quote_time.isocalendar()[1]
             }
             self.inserter.insert_data(
-                table='equities.ticker_history', data=history_data)
+                table='equities.ticker_history',
+                data=history_data
+            )
             print(f"Added ticker history for '{stock_ticker}'")
 
 
@@ -226,8 +255,13 @@ class TickerHistoryManager:
 class ScannerCore:
     """Core scanner logic - orchestrates the scanning process"""
 
-    def __init__(self, inserter: InsertData, retriever: RetrieveData,
-                 updater: UpdateData, helper: Helpers):
+    def __init__(
+            self,
+            inserter: InsertData,
+            retriever: RetrieveData,
+            updater: UpdateData,
+            helper: Helpers
+        ):
         self.inserter = inserter
         self.retriever = retriever
         self.updater = updater
@@ -239,10 +273,16 @@ class ScannerCore:
         self.news_processor = NewsProcessor(inserter, retriever, self.fetcher)
         self.history_manager = TickerHistoryManager(inserter, retriever)
 
-    def scan_ticker(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, stock_ticker: str, scanner_table: str, market: str,
-        market_type: str, source: str, position: int
-    ):
+    def scan_ticker(
+            # pylint: disable=too-many-arguments,too-many-positional-arguments
+            self,
+            stock_ticker: str,
+            scanner_table: str,
+            market: str,
+            market_type: str,
+            source: str,
+            position: int
+        ):
         """
         Scan a stock ticker and update or add its data in the database
 
@@ -259,11 +299,23 @@ class ScannerCore:
         tickers_in_db = self.db_helper.get_tickers_in_db()
 
         if stock_ticker in tickers_in_db:
-            self._update_existing_ticker(stock_ticker, scanner_table, market)
+            self._update_existing_ticker(
+                stock_ticker=stock_ticker,
+                scanner_table=scanner_table,
+                market=market
+            )
         else:
-            self._add_new_ticker(stock_ticker, scanner_table)
+            self._add_new_ticker(
+                scanner_table=stock_ticker,
+                scanner_table=scanner_table
+            )
 
-    def _update_existing_ticker(self, stock_ticker: str, scanner_table: str, market: str):
+    def _update_existing_ticker(
+            self,
+            stock_ticker: str,
+            scanner_table: str,
+            market: str
+        ):
         """Handle existing ticker update logic"""
         print(f"... Updating -> '{stock_ticker}'")
 
@@ -275,44 +327,97 @@ class ScannerCore:
         )[0][0]
 
         stock_uuid = self.db_helper.get_uuid(
-            ticker=stock_ticker, market='equities')
+            ticker=stock_ticker,
+            market='equities'
+        )
 
         if self._is_same_date_as_today(quote_time_db):
             self._update_today_data(
-                stock_ticker, scanner_table, market, stock_uuid)
+                stock_ticker=stock_ticker,
+                scanner_table=scanner_table,
+                market=market,
+                stock_uuid=stock_uuid
+            )
         else:
-            self._update_stale_data(stock_ticker, scanner_table, stock_uuid)
+            self._update_stale_data(
+                stock_ticker=stock_ticker,
+                scanner_table=scanner_table,
+                stock_uuid=stock_uuid
+            )
 
-    def _update_today_data(self, stock_ticker: str, scanner_table: str,
-                           market: str, stock_uuid: str):
+    def _update_today_data(
+            self,
+            stock_ticker: str,
+            scanner_table: str,
+            market: str,
+            stock_uuid: str
+        ):
         """Update data that's already current for today"""
-        tickers_in_scanner = self.db_helper.get_tickers_in_db(market=market)
-        quote_data = self.fetcher.fetch_schwab_quote_data(stock_ticker)
+        tickers_in_scanner = self.db_helper.get_tickers_in_db(
+            market=market
+        )
+        quote_data = self.fetcher.fetch_schwab_quote_data(
+            stock_ticker=stock_ticker
+        )
 
         if stock_ticker in tickers_in_scanner:
-            self._update_scanner_table(scanner_table, stock_uuid, quote_data)
+            self._update_scanner_table(
+                table=scanner_table,
+                stock_uuid=stock_uuid,
+                data=quote_data
+            )
             print(f"... Updated scanner table for '{stock_ticker}'")
         else:
-            self._insert_scanner_table(scanner_table, stock_ticker, quote_data)
+            self._insert_scanner_table(
+                table=scanner_table,
+                ticker=stock_ticker,
+                data=quote_data
+            )
             self.history_manager.add_today_if_needed(
-                stock_uuid, stock_ticker, quote_data.quote_time)
+                stock_uuid=stock_uuid,
+                stock_ticker=stock_ticker,
+                quote_time=quote_data.quote_time
+            )
 
             scan = SearchYahooFinance(ticker=stock_ticker)
             self.news_processor.process_company_news(
-                stock_ticker, stock_uuid, scan.company_news()
+                stock_ticker=stock_ticker,
+                stock_uuid=stock_uuid,
+                company_news=scan.company_news()
             )
 
         print("---- " * 8)
 
-    def _update_stale_data(self, stock_ticker: str, scanner_table: str, stock_uuid: str):
+    def _update_stale_data(
+            self,
+            stock_ticker: str,
+            scanner_table: str,
+            stock_uuid: str
+        ):
         """Update data that's outdated (not from today)"""
-        schwab_data = self.fetcher.fetch_schwab_full_data(stock_ticker)
-        yahoo_data = self.fetcher.fetch_yahoo_data(stock_ticker)
+        schwab_data = self.fetcher.fetch_schwab_full_data(
+            stock_ticker=stock_ticker
+        )
+        yahoo_data = self.fetcher.fetch_yahoo_data(
+            stock_ticker=stock_ticker
+        )
 
-        self._update_stock_data_table(stock_uuid, schwab_data, yahoo_data)
-        self._update_short_data_table(stock_uuid, yahoo_data)
+        self._update_stock_data_table(
+            stock_uuid,
+            schwab_data,
+            yahoo_data
+        )
+
+        self._update_short_data_table(
+            stock_uuid,
+            yahoo_data
+        )
+
         self.history_manager.add_today_if_needed(
-            stock_uuid, stock_ticker, schwab_data.quote_time)
+            stock_uuid,
+            stock_ticker,
+            schwab_data.quote_time
+        )
 
         quote_data = StockQuoteData(
             last_price=schwab_data.last_price,
@@ -320,28 +425,58 @@ class ScannerCore:
             volume=schwab_data.volume,
             quote_time=schwab_data.quote_time
         )
-        self._insert_scanner_table(scanner_table, stock_ticker, quote_data)
 
-        scan = SearchYahooFinance(ticker=stock_ticker)
+        self._insert_scanner_table(
+            scanner_table,
+            stock_ticker,
+            quote_data
+        )
+
+        scan = SearchYahooFinance(
+            ticker=stock_ticker
+        )
         self.news_processor.process_company_news(
-            stock_ticker, stock_uuid, scan.company_news()
+            stock_ticker=stock_ticker,
+            stock_uuid=stock_uuid,
+            company_news=scan.company_news()
         )
 
         print("---- " * 8)
 
-    def _add_new_ticker(self, stock_ticker: str, scanner_table: str):
+    def _add_new_ticker(
+            self,
+            stock_ticker: str,
+            scanner_table: str
+        ):
         """Add completely new ticker to database"""
         print(f"- Adding new stock -> {stock_ticker}")
 
-        schwab_data = self.fetcher.fetch_schwab_full_data(stock_ticker)
-        yahoo_data = self.fetcher.fetch_yahoo_data(stock_ticker)
+        schwab_data = self.fetcher.fetch_schwab_full_data(
+            stock_ticker=stock_ticker
+        )
+        yahoo_data = self.fetcher.fetch_yahoo_data(
+            stock_ticker=stock_ticker
+        )
         stock_uuid = uuid.uuid4()
 
         self._insert_stock_data_table(
-            stock_uuid, stock_ticker, schwab_data, yahoo_data)
-        self._insert_short_data_table(stock_uuid, stock_ticker, yahoo_data)
+            stock_uuid=stock_uuid,
+            ticker=stock_ticker,
+            schwab=schwab_data,
+            yahoo=yahoo_data
+        )
+
+        self._insert_short_data_table(
+            stock_uuid=stock_uuid,
+            ticker=stock_ticker,
+            yahoo=yahoo_data
+        )
+
         self.history_manager.add_today_if_needed(
-            stock_uuid, stock_ticker, schwab_data.quote_time)
+            stock_uuid=stock_uuid,
+            stock_ticker=stock_ticker,
+            quote_time=schwab_data.quote_time
+        )
 
         quote_data = StockQuoteData(
             last_price=schwab_data.last_price,
@@ -349,17 +484,31 @@ class ScannerCore:
             volume=schwab_data.volume,
             quote_time=schwab_data.quote_time
         )
-        self._insert_scanner_table(scanner_table, stock_ticker, quote_data)
 
-        scan = SearchYahooFinance(ticker=stock_ticker)
+        self._insert_scanner_table(
+            table=scanner_table,
+            ticker=stock_ticker,
+            data=quote_data
+        )
+
+        scan = SearchYahooFinance(
+            ticker=stock_ticker
+        )
         self.news_processor.process_company_news(
-            stock_ticker, str(stock_uuid), scan.company_news()
+            stock_ticker=stock_ticker,
+            stock_uuid=str(stock_uuid),
+            company_news=scan.company_news()
         )
 
         print("---- " * 8)
 
     # Database operation helpers
-    def _update_scanner_table(self, table: str, stock_uuid: str, data: StockQuoteData):
+    def _update_scanner_table(
+            self,
+            table: str,
+            stock_uuid: str,
+            data: StockQuoteData
+        ):
         update_params = {
             'quote_time': data.quote_time,
             'last_price': data.last_price,
@@ -367,12 +516,18 @@ class ScannerCore:
             'volume': data.volume
         }
         self.updater.update_data(
-            table=table, update_data=update_params,
+            table=table,
+            update_data=update_params,
             where_constraint_column='stock_uuid',
             where_constraint_data=stock_uuid
         )
 
-    def _insert_scanner_table(self, table: str, ticker: str, data: StockQuoteData):
+    def _insert_scanner_table(
+            self,
+            table: str,
+            ticker: str,
+            data: StockQuoteData
+        ):
         insert_params = {
             'quote_time': data.quote_time,
             'ticker': ticker,
@@ -380,9 +535,17 @@ class ScannerCore:
             'chg_percentage': data.change_percentage,
             'volume': data.volume
         }
-        self.inserter.insert_data(table=table, data=insert_params)
+        self.inserter.insert_data(
+            table=table,
+            data=insert_params
+        )
 
-    def _update_stock_data_table(self, stock_uuid: str, schwab: StockQuoteData, yahoo: Dict):
+    def _update_stock_data_table(
+            self,
+            stock_uuid: str,
+            schwab: StockQuoteData,
+            yahoo: Dict
+        ):
         update_params = {
             'quote_time': schwab.quote_time,
             'stock_float': yahoo['stock_float'],
@@ -400,11 +563,17 @@ class ScannerCore:
             'business_summary': yahoo['business_summary'],
         }
         self.updater.update_data(
-            table='equities.stock_data', update_data=update_params,
-            where_constraint_column='stock_uuid', where_constraint_data=stock_uuid
+            table='equities.stock_data',
+            update_data=update_params,
+            where_constraint_column='stock_uuid',
+            where_constraint_data=stock_uuid
         )
 
-    def _update_short_data_table(self, stock_uuid: str, yahoo: Dict):
+    def _update_short_data_table(
+            self,
+            stock_uuid: str,
+            yahoo: Dict
+        ):
         update_params = {
             'shares_short': yahoo['shares_short'],
             'short_ratio': yahoo['short_ratio'],
@@ -417,12 +586,19 @@ class ScannerCore:
             )
         }
         self.updater.update_data(
-            table='equities.stock_short_data', update_data=update_params,
-            where_constraint_column='stock_uuid', where_constraint_data=stock_uuid
+            table='equities.stock_short_data',
+            update_data=update_params,
+            where_constraint_column='stock_uuid',
+            where_constraint_data=stock_uuid
         )
 
-    def _insert_stock_data_table(self, stock_uuid: uuid.UUID, ticker: str,
-                                 schwab: StockQuoteData, yahoo: Dict):
+    def _insert_stock_data_table(
+            self,
+            stock_uuid: uuid.UUID,
+            ticker: str,
+            schwab: StockQuoteData,
+            yahoo: Dict
+        ):
         insert_params = {
             'stock_uuid': stock_uuid,
             'quote_time': schwab.quote_time,
@@ -443,9 +619,16 @@ class ScannerCore:
             'business_summary': yahoo['business_summary']
         }
         self.inserter.insert_data(
-            table='equities.stock_data', data=insert_params)
+            table='equities.stock_data',
+            data=insert_params
+        )
 
-    def _insert_short_data_table(self, stock_uuid: uuid.UUID, ticker: str, yahoo: Dict):
+    def _insert_short_data_table(
+            self,
+            stock_uuid: uuid.UUID,
+            ticker: str,
+            yahoo: Dict
+        ):
         insert_params = {
             'stock_uuid': stock_uuid,
             'ticker': ticker,
@@ -460,14 +643,24 @@ class ScannerCore:
             )
         }
         self.inserter.insert_data(
-            table='equities.stock_short_data', data=insert_params)
+            table='equities.stock_short_data',
+            data=insert_params
+        )
 
-    def _convert_timestamp_if_needed(self, timestamp) -> Optional[datetime]:
+    def _convert_timestamp_if_needed(
+            self,
+            timestamp
+        ) -> Optional[datetime | str]:
         if timestamp is None:
             return None
-        return self.helper.detect_and_convert_timestamp(timestamp=timestamp)
+        return self.helper.detect_and_convert_timestamp(
+            timestamp=timestamp
+        )
 
-    def _is_same_date_as_today(self, input_datetime: datetime) -> bool:
+    def _is_same_date_as_today(
+            self,
+            input_datetime: datetime
+        ) -> bool:
         return input_datetime.date() == datetime.now().date()
 
 
@@ -486,12 +679,21 @@ class Scanner:
 
         # Delegate complex logic to ScannerCore
         self.core = ScannerCore(
-            self.inserter, self.retriever, self.updater, self.helper
+            inserter=self.inserter,
+            retriever=self.retriever,
+            updater=self.updater,
+            helper=self.helper
         )
 
-    def scan_ticker(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, stock_ticker: str, scanner_table: str, market: str,
-        market_type: str, source: str, position: int
+    def scan_ticker(
+            # pylint: disable=too-many-arguments,too-many-positional-arguments
+            self,
+            stock_ticker: str,
+            scanner_table: str,
+            market: str,
+            market_type: str,
+            source: str,
+            position: int
     ):
         """
         Delegate ticker scanning to the core scanner logic
@@ -505,10 +707,18 @@ class Scanner:
             position (int): Position or rank of the ticker in the scan
         """
         self.core.scan_ticker(
-            stock_ticker, scanner_table, market, market_type, source, position
+            stock_ticker=stock_ticker,
+            scanner_table=scanner_table,
+            market=market,
+            market_type=market_type,
+            source=source,
+            position=position
         )
 
-    def is_same_date_as_today(self, input_datetime: datetime) -> bool:
+    def is_same_date_as_today(
+            self,
+            input_datetime: datetime
+        ) -> bool:
         """Checks if the input datetime has the same date as today"""
         return input_datetime.date() == datetime.now().date()
 
@@ -520,7 +730,10 @@ class Scanner:
 class PreMarket(Scanner):
     """Pre-market scanner implementation"""
 
-    def __init__(self, output_length: str | int = None):
+    def __init__(
+            self,
+            output_length: Optional[int] = None
+        ):
         super().__init__()
         self.output_length = output_length
         self.stock_analysis_scanner = ScanStockAnalysis()
@@ -528,7 +741,10 @@ class PreMarket(Scanner):
         self.market_type = 'Pre-Market'
         self.pre_market_scanner_table = 'pre_market.pre_market_scanner'
 
-    def _get_length(self, total_length: int) -> int:
+    def _get_length(
+            self,
+            total_length: int
+        ) -> int:
         """Helper to determine scan length"""
         if self.output_length is None:
             return 15
@@ -543,24 +759,44 @@ class PreMarket(Scanner):
 
         for i in range(length):
             stock_ticker = self.stock_analysis_scanner.ticker(
-                position=i, market=self.market)
+                position=i,
+                market=self.market
+            )
             try:
-                self.scan_ticker(stock_ticker, self.pre_market_scanner_table,
-                                 self.market, self.market_type, 'Stocks Analysis', i)
+                self.scan_ticker(
+                    stock_ticker=stock_ticker,
+                    scanner_table=self.pre_market_scanner_table,
+                    market=self.market,
+                    market_type=self.market_type,
+                    source='Stocks Analysis',
+                    position=i
+                )
             except AttributeError:
                 pass
 
-    def charles_schwab_pre_market_movers(self, symbol_id: str = 'EQUITY_ALL',
-                                         sort: str = 'PERCENT_CHANGE_UP'):
+    def charles_schwab_pre_market_movers(
+            self,
+            symbol_id: str = 'EQUITY_ALL',
+            sort: str = 'PERCENT_CHANGE_UP'
+        ):
         """Screener from Charles Schwab"""
         print("---- " * 8)
         schwab = SchwabAPI()
-        movers = schwab.movers(symbol_id=symbol_id, sort=sort)
+        movers = schwab.movers(
+            symbol_id=symbol_id,
+            sort=sort
+        )
 
         for position, ticker in enumerate(movers['screeners'], start=1):
             stock_ticker = ticker['symbol']
-            self.scan_ticker(stock_ticker, self.pre_market_scanner_table,
-                             self.market, self.market_type, 'Charles Schwab', position)
+            self.scan_ticker(
+                stock_ticker=stock_ticker,
+                scanner_table=self.pre_market_scanner_table,
+                market=self.market,
+                market_type=self.market_type,
+                source='Charles Schwab',
+                position=position
+            )
 
 
 # ============================================================================
@@ -570,7 +806,10 @@ class PreMarket(Scanner):
 class RegularMarket(Scanner):
     """Regular market scanner implementation"""
 
-    def __init__(self, output_length: str | int = None):
+    def __init__(
+            self,
+            output_length: Optional[int] = None
+        ):
         super().__init__()
         self.output_length = output_length
         self.stock_analysis_scanner = ScanStockAnalysis()
@@ -578,7 +817,10 @@ class RegularMarket(Scanner):
         self.market_type = "Regular-Market"
         self.regular_market_scanner_table = 'regular_market.regular_market_scanner'
 
-    def _get_length(self, total_length: int) -> int:
+    def _get_length(
+            self,
+            total_length: int
+        ) -> int:
         """Helper to determine scan length"""
         if self.output_length is None:
             return 15
@@ -591,40 +833,70 @@ class RegularMarket(Scanner):
         print("---- " * 8)
         data_type = 'gainers'
         length = self.stock_analysis_scanner.regular_market_length(
-            data_type=data_type)
+            data_type=data_type
+        )
 
         for i in range(length):
             stock_ticker = self.stock_analysis_scanner.ticker(
-                position=i, market=self.market, data_type=data_type
+                position=i,
+                market=self.market,
+                data_type=data_type
             )
-            self.scan_ticker(stock_ticker, self.regular_market_scanner_table,
-                             self.market, self.market_type, 'Stocks Analysis - Gainers', i)
+            self.scan_ticker(
+                stock_ticker=stock_ticker,
+                scanner_table=self.regular_market_scanner_table,
+                market=self.market,
+                market_type=self.market_type,
+                source='Stocks Analysis - Gainers',
+                position=i
+            )
 
     def stock_analysis_regular_market_active(self):
         """Regular Market Stocks Active from StockAnalysis.com"""
         print("---- " * 8)
         data_type = 'active'
         length = self.stock_analysis_scanner.regular_market_length(
-            data_type=data_type)
+            data_type=data_type
+        )
 
         for i in range(length):
             stock_ticker = self.stock_analysis_scanner.ticker(
-                position=i, market=self.market, data_type=data_type
+                position=i,
+                market=self.market,
+                data_type=data_type
             )
-            self.scan_ticker(stock_ticker, self.regular_market_scanner_table,
-                             self.market, self.market_type, 'Stocks Analysis - Active', i)
+            self.scan_ticker(
+                stock_ticker=stock_ticker,
+                scanner_table=self.regular_market_scanner_table,
+                market=self.market,
+                market_type=self.market_type,
+                source='Stocks Analysis - Active',
+                position=i
+            )
 
-    def charles_schwab_regular_market_movers(self, symbol_id: str = 'EQUITY_ALL',
-                                             sort: str = 'PERCENT_CHANGE_UP'):
+    def charles_schwab_regular_market_movers(
+            self,
+            symbol_id: str = 'EQUITY_ALL',
+            sort: str = 'PERCENT_CHANGE_UP'
+        ):
         """Screener from Charles Schwab in Regular Market"""
         print("---- " * 8)
         schwab = SchwabAPI()
-        movers = schwab.movers(symbol_id=symbol_id, sort=sort)
+        movers = schwab.movers(
+            symbol_id=symbol_id,
+            sort=sort
+        )
 
         for position, ticker in enumerate(movers['screeners'], start=1):
             stock_ticker = ticker['symbol']
-            self.scan_ticker(stock_ticker, self.regular_market_scanner_table,
-                             self.market, self.market_type, 'Charles Schwab', position)
+            self.scan_ticker(
+                stock_ticker=stock_ticker,
+                scanner_table=self.regular_market_scanner_table,
+                market=self.market,
+                market_type=self.market_type,
+                source='Charles Schwab',
+                position=position
+            )
 
 
 # ============================================================================

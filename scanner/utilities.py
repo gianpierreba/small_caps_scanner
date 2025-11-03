@@ -50,7 +50,10 @@ class NewsItem:
 class Searching:
     """Utility class for searching stock information"""
 
-    def __init__(self, stock_ticker: str):
+    def __init__(
+            self,
+            stock_ticker: str
+        ):
         self.stock_ticker = stock_ticker
 
     def search_stock(self):

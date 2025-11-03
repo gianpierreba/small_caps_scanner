@@ -28,7 +28,10 @@ active_scanners = {}
 stop_events = {}
 
 
-def log_message(message: str, level: str = "INFO"):
+def log_message(
+        message: str,
+        level: str = "INFO"
+    ):
     '''Helper to log messages consistently'''
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"[{timestamp}] [{level}] {message}")
@@ -59,7 +62,10 @@ def execute_market_scanner(
                 break
 
             try:
-                scanner_method = getattr(scanner, scanner_method_name)
+                scanner_method = getattr(
+                    scanner,
+                    scanner_method_name
+                )
                 scanner_method()
             except AttributeError:
                 log_message(
@@ -115,7 +121,9 @@ def start_scanner_thread(
     }
 
 
-def stop_scanner(market_type: MarketType) -> dict:
+def stop_scanner(
+        market_type: MarketType
+    ) -> dict:
     """
     Stops a specific scanner.
 

@@ -58,7 +58,11 @@ class SchwabAPI:
     APP_KEY_SCHWAB = os.getenv('APP_KEY_SCHWAB')
     CLIENT_SECRET_SCHWAB = os.getenv('CLIENT_SECRET_SCHWAB')
 
-    def __init__(self, access_token: str = None, stock_ticker: str = None):
+    def __init__(
+            self,
+            access_token: Optional[str] = None,
+            stock_ticker: Optional[str] = None
+        ):
         """
         Initialize SchwabAPI client, set up authentication and optionally load
         market data for a given stock ticker
@@ -90,9 +94,11 @@ class SchwabAPI:
         if stock_ticker is not None:
             self.stock_ticker = stock_ticker
             self._quote_single = self.quote_single(
-                stock_ticker=self.stock_ticker)
+                stock_ticker=self.stock_ticker
+            )
             self._stock_fundamental = self.stock_fundamental(
-                stock_ticker=self.stock_ticker)
+                stock_ticker=self.stock_ticker
+            )
         else:
             self.stock_ticker = None
 
@@ -126,29 +132,47 @@ class SchwabAPI:
         token_data = self._retrieve_latest_token()
         return token_data['access_token'], token_data['expiry_time']
 
-    def _has_week_passed(self, timestamp_str: str = None):
+    def _has_week_passed(
+            self,
+            timestamp_str: Optional[str] = None
+        ):
         if timestamp_str is None:
             data_date = self.retriever.retrieve_data(
-                table_name="schwab_access.schwab_access_refresh_token", column="time")[-1][0]
+                table_name="schwab_access.schwab_access_refresh_token",
+                column="time"
+            )[-1][0]
         else:
-            data_date = datetime.fromisoformat(timestamp_str)
+            data_date = datetime.fromisoformat(
+                date_string=timestamp_str
+            )
         return (datetime.now() - data_date) >= timedelta(weeks=1)
 
     def _30_minutes_passed(self) -> bool:
         data_token = self.retriever.retrieve_data(
-            table_name="schwab_access.schwab_access_refresh_token", column="time")[-1]
+            table_name="schwab_access.schwab_access_refresh_token",
+            column="time"
+        )[-1]
         return (datetime.now() - data_token[0]) >= timedelta(minutes=30)
 
-    def _is_token_valid(self, access_token: str) -> bool:
+    def _is_token_valid(
+            self,
+            access_token: str
+        ) -> bool:
+
         headers = {'accept': 'application/json',
                    'Authorization': f"Bearer {access_token}"}
         response = self.session.get(
-            url=self.market_data_base_url + '/FFIE/quotes', headers=headers)
+            url=self.market_data_base_url + '/FFIE/quotes',
+            headers=headers,
+            timeout=30
+        )
         return response.status_code == 200
 
     def _retrieve_latest_token(self) -> dict:
         token_data = self.retriever.retrieve_data(
-            table_name="schwab_access.schwab_access_refresh_token", column="*")[-1]
+            table_name="schwab_access.schwab_access_refresh_token",
+            column="*"
+        )[-1]
         return {
             'access_token': token_data[6],
             'expiry_time': token_data[1] + timedelta(seconds=token_data[2])
@@ -163,7 +187,10 @@ class SchwabAPI:
         LOGGER.info("Click to authenticate: %s", auth_url)
         return auth_url
 
-    def _construct_headers_and_payload(self, returned_url: str) -> tuple:
+    def _construct_headers_and_payload(
+            self,
+            returned_url: str
+        ) -> tuple:
         code_start = returned_url.index('code=') + 5
         code_end = returned_url.index('%40')
         response_code = f"{returned_url[code_start:code_end]}@"
@@ -185,9 +212,17 @@ class SchwabAPI:
         }
         return headers, payload
 
-    def _retrieve_tokens(self, headers: dict, payload: dict) -> dict:
+    def _retrieve_tokens(
+            self,
+            headers: dict,
+            payload: dict
+        ) -> dict:
         response = self.session.post(
-            url="https://api.schwabapi.com/v1/oauth/token", headers=headers, data=payload)
+            url="https://api.schwabapi.com/v1/oauth/token",
+            headers=headers,
+            data=payload,
+            timeout=30
+        )
         return response.json()
 
     def _authenticate(self):
@@ -195,8 +230,13 @@ class SchwabAPI:
         webbrowser.open(auth_url)
         LOGGER.info("Paste Returned URL:")
         returned_url = input()
-        headers, payload = self._construct_headers_and_payload(returned_url)
-        tokens = self._retrieve_tokens(headers=headers, payload=payload)
+        headers, payload = self._construct_headers_and_payload(
+            returned_url=returned_url
+        )
+        tokens = self._retrieve_tokens(
+            headers=headers,
+            payload=payload
+        )
         current_datetime = datetime.now()
 
         access_refresh_token_data = {
@@ -210,12 +250,16 @@ class SchwabAPI:
             'id_token': tokens['id_token']
         }
         self.inserter.insert_data(
-            table=self.schwab_access, data=access_refresh_token_data)
+            table=self.schwab_access,
+            data=access_refresh_token_data
+        )
         return tokens
 
     def _refresh_tokens(self):
         refresh_token = self.retriever.retrieve_data(
-            table_name="schwab_access.schwab_access_refresh_token", column="refresh_token")[-1][0]
+            table_name="schwab_access.schwab_access_refresh_token",
+            column="refresh_token"
+        )[-1][0]
         payload = {"grant_type": "refresh_token",
                    "refresh_token": refresh_token}
         credentials = (
@@ -228,7 +272,11 @@ class SchwabAPI:
             "Content-Type": "application/x-www-form-urlencoded"
         }
         response = self.session.post(
-            url="https://api.schwabapi.com/v1/oauth/token", headers=headers, data=payload)
+            url="https://api.schwabapi.com/v1/oauth/token",
+            headers=headers,
+            data=payload,
+            timeout=30
+        )
 
         if response.status_code == 200:
             tokens = response.json()
@@ -244,7 +292,9 @@ class SchwabAPI:
                 'id_token': tokens['id_token']
             }
             self.inserter.insert_data(
-                table=self.schwab_access, data=access_refresh_token_data)
+                table=self.schwab_access,
+                data=access_refresh_token_data
+            )
             return {
                 'access_token': tokens['access_token'],
                 'expiry_time': current_datetime + timedelta(seconds=tokens['expires_in'])
@@ -252,7 +302,11 @@ class SchwabAPI:
         LOGGER.error("Error refreshing access token: %s", response.text)
         return None
 
-    def movers(self, symbol_id: str, sort: str) -> dict:
+    def movers(
+            self,
+            symbol_id: str,
+            sort: str
+        ) -> dict:
         """
         Retrieve market movers data for a given symbol and sort order from the Schwab API
 
@@ -277,7 +331,10 @@ class SchwabAPI:
             'content': response.text
         }
 
-    def market_cap(self, stock_ticker: str = None) -> float:
+    def market_cap(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> float:
         """
         Retrieve the market capitalization value for a given stock ticker.
 
@@ -293,7 +350,11 @@ class SchwabAPI:
         )
         return stock_fundamental['instruments'][0]['fundamental']['marketCap']
 
-    def average_volume(self, output: int, stock_ticker: str = None):
+    def average_volume(
+            self,
+            output: int,
+            stock_ticker: Optional[str] = None
+        ):
         """
         Retrieve the average trading volume for a stock over a specified period
 
@@ -317,7 +378,10 @@ class SchwabAPI:
         key = volume_map.get(output)
         return stock_fundamental['instruments'][0]['fundamental'][key] if key else None
 
-    def stock_fundamental(self, stock_ticker: str = None):
+    def stock_fundamental(
+            self,
+            stock_ticker: Optional[str] = None
+        ):
         """
         Retrieve fundamental financial data for a specified stock ticker from the Schwab API
 
@@ -342,7 +406,10 @@ class SchwabAPI:
             'content': response.text
         }
 
-    def quote_single(self, stock_ticker: str = None):
+    def quote_single(
+            self,
+            stock_ticker: Optional[str] = None
+        ):
         """
         Retrieve real-time quote data for a single stock ticker symbol
 
@@ -372,7 +439,10 @@ class SchwabAPI:
             "stock_ticker needed in constructor or as parameter"
         )
 
-    def last_price(self, stock_ticker: str = None) -> Optional[float]:
+    def last_price(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> Optional[float]:
         """
         Retrieve the last traded price for a given stock ticker symbol
 
@@ -383,7 +453,9 @@ class SchwabAPI:
             float | None: Last traded price as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(stock_ticker=stock_ticker)
+            request = self.quote_single(
+                stock_ticker=stock_ticker
+            )
             try:
                 return request[stock_ticker]['quote']['lastPrice']
             except KeyError:
@@ -394,7 +466,10 @@ class SchwabAPI:
             except KeyError:
                 return None
 
-    def change_percentage(self, stock_ticker: str = None) -> Optional[float]:
+    def change_percentage(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> Optional[float]:
         """
         Retrieve the percentage change in price for a given stock ticker symbol
 
@@ -404,7 +479,9 @@ class SchwabAPI:
             float | None: Percentage change in price as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(stock_ticker=stock_ticker)
+            request = self.quote_single(
+                stock_ticker=stock_ticker
+            )
             try:
                 return request[stock_ticker]['quote']['netPercentChange']
             except KeyError:
@@ -415,7 +492,10 @@ class SchwabAPI:
             except KeyError:
                 return None
 
-    def volume(self, stock_ticker: str = None) -> Optional[float]:
+    def volume(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> Optional[float]:
         """
         Retrieve the total trading volume for a given stock ticker symbol
 
@@ -426,11 +506,16 @@ class SchwabAPI:
             float | None: Total trading volume as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(stock_ticker=stock_ticker)
+            request = self.quote_single(
+                stock_ticker=stock_ticker
+            )
             return request[stock_ticker]['quote']['totalVolume']
         return self._quote_single[self.stock_ticker]['quote']['totalVolume']
 
-    def quote_time(self, stock_ticker: str = None) -> datetime:
+    def quote_time(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> datetime | str:
         """
         Retrieve the timestamp of the latest quote for a given stock ticker symbol
 
@@ -442,7 +527,9 @@ class SchwabAPI:
         """
         helper = Helpers()
         if stock_ticker:
-            quote_data = self.quote_single(stock_ticker=stock_ticker)
+            quote_data = self.quote_single(
+                stock_ticker=stock_ticker
+            )
         else:
             quote_data = self._quote_single[self.stock_ticker]
 
@@ -451,9 +538,14 @@ class SchwabAPI:
         except KeyError as e:
             raise KeyError(f"Missing key in quote data: {e}") from e
 
-        return helper.detect_and_convert_timestamp(timestamp=quote_time)
+        return helper.detect_and_convert_timestamp(
+            timestamp=quote_time
+        )
 
-    def company_name(self, stock_ticker: str = None) -> Optional[str]:
+    def company_name(
+            self,
+            stock_ticker: Optional[str] = None
+        ) -> Optional[str]:
         """
         Retrieve the company name for a given stock ticker symbol
 
@@ -464,7 +556,9 @@ class SchwabAPI:
             str | None: The company name associated with the stock ticker, or None if not found
         """
         if stock_ticker is not None:
-            request = self.quote_single(stock_ticker=stock_ticker)
+            request = self.quote_single(
+                stock_ticker=stock_ticker
+            )
             try:
                 return request[stock_ticker]['reference']['description']
             except KeyError:
@@ -483,7 +577,11 @@ class SchwabAPI:
 class SearchYahooFinance:
     """Yahoo Finance API wrapper with lazy loading"""
 
-    def __init__(self, ticker: str = None, company_name: str = None):
+    def __init__(
+            self,
+            ticker: Optional[str] = None,
+            company_name: Optional[str] = None
+        ):
         """
         Initialize a SearchYahooFinance instance with optional ticker and company name
 
@@ -648,7 +746,10 @@ class AlphaVantageAPI:
 
     ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 
-    def __init__(self, api_key: str = None):
+    def __init__(
+            self,
+            api_key: Optional[str] = None
+        ):
         """
         Initialize Alpha Vantage API client
         Args:
@@ -760,7 +861,10 @@ class PolygonAPI:
 
     POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
 
-    def __init__(self, api_key: str = None):
+    def __init__(
+            self,
+            api_key: Optional[str] = None
+        ):
         """
         Initialize Polygon API client
         Args:
@@ -825,7 +929,10 @@ class FMPApi:
 
     FMP_API_KEY = os.getenv('FMP_API_KEY')
 
-    def __init__(self, api_key: str = None):
+    def __init__(
+            self,
+            api_key: Optional[str] = None
+        ):
         """
         Initialize FMP API client
 
@@ -865,7 +972,11 @@ class FMPApi:
         url = f"{self.base_url}{endpoint}"
 
         try:
-            response = self.session.get(url, params=params, timeout=30)
+            response = self.session.get(
+                url=url,
+                params=params,
+                timeout=30
+            )
             response.raise_for_status()
             return response.json()
 
@@ -933,7 +1044,11 @@ class AlpacaAPI:
     ALPACA_CLIENT_ID = os.getenv('ALPACA_CLIENT_ID')
     ALPACA_CLIENT_SECRET = os.getenv('ALPACA_CLIENT_SECRET')
 
-    def __init__(self, alpaca_client_id: str = None, alpaca_client_secret: str = None):
+    def __init__(
+            self,
+            alpaca_client_id: Optional[str] = None,
+            alpaca_client_secret: Optional[str] = None
+        ):
         """
         Initialize Alpaca API client
         Args:
@@ -1122,7 +1237,10 @@ class IntrinioAPI:
 
     INTRINIO_API_KEY = os.getenv('INTRINIO_API_KEY')
 
-    def __init__(self, api_key: str = None):
+    def __init__(
+            self,
+            api_key: Optional[str] = None
+        ):
         """
         Initialize Intrinio API client
 

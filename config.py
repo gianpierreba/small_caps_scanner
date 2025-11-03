@@ -230,7 +230,9 @@ class ApplicationConfig:
         errors = []
 
         if self.sleep_time < 1:
-            errors.append(f"SCANNER_SLEEP_TIME must be >= 1 second, got: {self.sleep_time}")
+            errors.append(
+                f"SCANNER_SLEEP_TIME must be >= 1 second, got: {self.sleep_time}"
+            )
 
         if self.sleep_time < 10:
             errors.append(
@@ -239,7 +241,9 @@ class ApplicationConfig:
             )
 
         if self.output_length < 1:
-            errors.append(f"SCANNER_OUTPUT_LENGTH must be >= 1, got: {self.output_length}")
+            errors.append(
+                f"SCANNER_OUTPUT_LENGTH must be >= 1, got: {self.output_length}"
+            )
 
         valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if self.log_level.upper() not in valid_log_levels:
