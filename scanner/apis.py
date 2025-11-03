@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import yfinance as yf
-
 # Polygon API
 from polygon import RESTClient
 from polygon.rest.models import TickerSnapshot
@@ -36,6 +35,7 @@ LOGGER = logging.getLogger(__name__)
 # ============================================================================
 # CHARLES SCHWAB API
 # ============================================================================
+
 
 class SchwabAPI:
     """
@@ -55,14 +55,12 @@ class SchwabAPI:
     - Support for multiple stock tickers
     """
 
-    APP_KEY_SCHWAB = os.getenv('APP_KEY_SCHWAB')
-    CLIENT_SECRET_SCHWAB = os.getenv('CLIENT_SECRET_SCHWAB')
+    APP_KEY_SCHWAB = os.getenv("APP_KEY_SCHWAB")
+    CLIENT_SECRET_SCHWAB = os.getenv("CLIENT_SECRET_SCHWAB")
 
     def __init__(
-            self,
-            access_token: Optional[str] = None,
-            stock_ticker: Optional[str] = None
-        ):
+        self, access_token: Optional[str] = None, stock_ticker: Optional[str] = None
+    ):
         """
         Initialize SchwabAPI client, set up authentication and optionally load
         market data for a given stock ticker
@@ -72,9 +70,9 @@ class SchwabAPI:
         :param stock_ticker: Stock ticker symbol to fetch market data for
         :type stock_ticker: str
         """
-        self.schwab_access = 'schwab_access.schwab_access_refresh_token'
-        self.market_data_base_url = 'https://api.schwabapi.com/marketdata/v1'
-        self.redirect_uri = 'https://127.0.0.1'
+        self.schwab_access = "schwab_access.schwab_access_refresh_token"
+        self.market_data_base_url = "https://api.schwabapi.com/marketdata/v1"
+        self.redirect_uri = "https://127.0.0.1"
         self.session = requests.Session()
         self.access_token = access_token
         self.token_expiry = None
@@ -87,15 +85,13 @@ class SchwabAPI:
             self.access_token, self.token_expiry = self.get_access_token()
 
         self.headers = {
-            'accept': 'application/json',
-            'Authorization': f"Bearer {self.access_token}"
+            "accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         if stock_ticker is not None:
             self.stock_ticker = stock_ticker
-            self._quote_single = self.quote_single(
-                stock_ticker=self.stock_ticker
-            )
+            self._quote_single = self.quote_single(stock_ticker=self.stock_ticker)
             self._stock_fundamental = self.stock_fundamental(
                 stock_ticker=self.stock_ticker
             )
@@ -116,66 +112,55 @@ class SchwabAPI:
             if self._has_week_passed():
                 self._authenticate()
                 token_data = self._retrieve_latest_token()
-                return token_data['access_token'], token_data['expiry_time']
+                return token_data["access_token"], token_data["expiry_time"]
             token_data = self._retrieve_latest_token()
-            if self._is_token_valid(token_data['access_token']):
-                return token_data['access_token'], token_data['expiry_time']
+            if self._is_token_valid(token_data["access_token"]):
+                return token_data["access_token"], token_data["expiry_time"]
             refreshed_token_data = self._refresh_tokens()
             if refreshed_token_data:
                 return (
-                    refreshed_token_data['access_token'],
-                    refreshed_token_data['expiry_time']
+                    refreshed_token_data["access_token"],
+                    refreshed_token_data["expiry_time"],
                 )
             self._authenticate()
             token_data = self._retrieve_latest_token()
-            return token_data['access_token'], token_data['expiry_time']
+            return token_data["access_token"], token_data["expiry_time"]
         token_data = self._retrieve_latest_token()
-        return token_data['access_token'], token_data['expiry_time']
+        return token_data["access_token"], token_data["expiry_time"]
 
-    def _has_week_passed(
-            self,
-            timestamp_str: Optional[str] = None
-        ):
+    def _has_week_passed(self, timestamp_str: Optional[str] = None):
         if timestamp_str is None:
             data_date = self.retriever.retrieve_data(
-                table_name="schwab_access.schwab_access_refresh_token",
-                column="time"
+                table_name="schwab_access.schwab_access_refresh_token", column="time"
             )[-1][0]
         else:
-            data_date = datetime.fromisoformat(
-                date_string=timestamp_str
-            )
+            data_date = datetime.fromisoformat(date_string=timestamp_str)
         return (datetime.now() - data_date) >= timedelta(weeks=1)
 
     def _30_minutes_passed(self) -> bool:
         data_token = self.retriever.retrieve_data(
-            table_name="schwab_access.schwab_access_refresh_token",
-            column="time"
+            table_name="schwab_access.schwab_access_refresh_token", column="time"
         )[-1]
         return (datetime.now() - data_token[0]) >= timedelta(minutes=30)
 
-    def _is_token_valid(
-            self,
-            access_token: str
-        ) -> bool:
+    def _is_token_valid(self, access_token: str) -> bool:
 
-        headers = {'accept': 'application/json',
-                   'Authorization': f"Bearer {access_token}"}
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {access_token}",
+        }
         response = self.session.get(
-            url=self.market_data_base_url + '/FFIE/quotes',
-            headers=headers,
-            timeout=30
+            url=self.market_data_base_url + "/FFIE/quotes", headers=headers, timeout=30
         )
         return response.status_code == 200
 
     def _retrieve_latest_token(self) -> dict:
         token_data = self.retriever.retrieve_data(
-            table_name="schwab_access.schwab_access_refresh_token",
-            column="*"
+            table_name="schwab_access.schwab_access_refresh_token", column="*"
         )[-1]
         return {
-            'access_token': token_data[6],
-            'expiry_time': token_data[1] + timedelta(seconds=token_data[2])
+            "access_token": token_data[6],
+            "expiry_time": token_data[1] + timedelta(seconds=token_data[2]),
         }
 
     def _construct_init_auth_url(self) -> str:
@@ -187,19 +172,16 @@ class SchwabAPI:
         LOGGER.info("Click to authenticate: %s", auth_url)
         return auth_url
 
-    def _construct_headers_and_payload(
-            self,
-            returned_url: str
-        ) -> tuple:
-        code_start = returned_url.index('code=') + 5
-        code_end = returned_url.index('%40')
+    def _construct_headers_and_payload(self, returned_url: str) -> tuple:
+        code_start = returned_url.index("code=") + 5
+        code_end = returned_url.index("%40")
         response_code = f"{returned_url[code_start:code_end]}@"
         credentials = (
-            f"{self.__class__.APP_KEY_SCHWAB}:"
-            f"{self.__class__.CLIENT_SECRET_SCHWAB}"
+            f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
         )
-        base64_credentials = base64.b64encode(
-            credentials.encode("utf-8")).decode("utf-8")
+        base64_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
 
         headers = {
             "Authorization": f"Basic {base64_credentials}",
@@ -212,16 +194,12 @@ class SchwabAPI:
         }
         return headers, payload
 
-    def _retrieve_tokens(
-            self,
-            headers: dict,
-            payload: dict
-        ) -> dict:
+    def _retrieve_tokens(self, headers: dict, payload: dict) -> dict:
         response = self.session.post(
             url="https://api.schwabapi.com/v1/oauth/token",
             headers=headers,
             data=payload,
-            timeout=30
+            timeout=30,
         )
         return response.json()
 
@@ -233,80 +211,70 @@ class SchwabAPI:
         headers, payload = self._construct_headers_and_payload(
             returned_url=returned_url
         )
-        tokens = self._retrieve_tokens(
-            headers=headers,
-            payload=payload
-        )
+        tokens = self._retrieve_tokens(headers=headers, payload=payload)
         current_datetime = datetime.now()
 
         access_refresh_token_data = {
-            'access_refresh_token_uuid': uuid.uuid4(),
-            'time': current_datetime,
-            'expires_in': tokens['expires_in'],
-            'token_type': tokens['token_type'],
-            'scope': tokens['scope'],
-            'refresh_token': tokens['refresh_token'],
-            'access_token': tokens['access_token'],
-            'id_token': tokens['id_token']
+            "access_refresh_token_uuid": uuid.uuid4(),
+            "time": current_datetime,
+            "expires_in": tokens["expires_in"],
+            "token_type": tokens["token_type"],
+            "scope": tokens["scope"],
+            "refresh_token": tokens["refresh_token"],
+            "access_token": tokens["access_token"],
+            "id_token": tokens["id_token"],
         }
         self.inserter.insert_data(
-            table=self.schwab_access,
-            data=access_refresh_token_data
+            table=self.schwab_access, data=access_refresh_token_data
         )
         return tokens
 
     def _refresh_tokens(self):
         refresh_token = self.retriever.retrieve_data(
             table_name="schwab_access.schwab_access_refresh_token",
-            column="refresh_token"
+            column="refresh_token",
         )[-1][0]
-        payload = {"grant_type": "refresh_token",
-                   "refresh_token": refresh_token}
+        payload = {"grant_type": "refresh_token", "refresh_token": refresh_token}
         credentials = (
-            f"{self.__class__.APP_KEY_SCHWAB}:"
-            f"{self.__class__.CLIENT_SECRET_SCHWAB}"
+            f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
         )
         encoded_creds = base64.b64encode(credentials.encode()).decode()
         headers = {
-            "Authorization": f'Basic {encoded_creds}',
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Authorization": f"Basic {encoded_creds}",
+            "Content-Type": "application/x-www-form-urlencoded",
         }
         response = self.session.post(
             url="https://api.schwabapi.com/v1/oauth/token",
             headers=headers,
             data=payload,
-            timeout=30
+            timeout=30,
         )
 
         if response.status_code == 200:
             tokens = response.json()
             current_datetime = datetime.now()
             access_refresh_token_data = {
-                'access_refresh_token_uuid': uuid.uuid4(),
-                'time': current_datetime,
-                'expires_in': tokens['expires_in'],
-                'token_type': tokens['token_type'],
-                'scope': tokens['scope'],
-                'refresh_token': tokens['refresh_token'],
-                'access_token': tokens['access_token'],
-                'id_token': tokens['id_token']
+                "access_refresh_token_uuid": uuid.uuid4(),
+                "time": current_datetime,
+                "expires_in": tokens["expires_in"],
+                "token_type": tokens["token_type"],
+                "scope": tokens["scope"],
+                "refresh_token": tokens["refresh_token"],
+                "access_token": tokens["access_token"],
+                "id_token": tokens["id_token"],
             }
             self.inserter.insert_data(
-                table=self.schwab_access,
-                data=access_refresh_token_data
+                table=self.schwab_access, data=access_refresh_token_data
             )
             return {
-                'access_token': tokens['access_token'],
-                'expiry_time': current_datetime + timedelta(seconds=tokens['expires_in'])
+                "access_token": tokens["access_token"],
+                "expiry_time": current_datetime
+                + timedelta(seconds=tokens["expires_in"]),
             }
         LOGGER.error("Error refreshing access token: %s", response.text)
         return None
 
-    def movers(
-            self,
-            symbol_id: str,
-            sort: str
-        ) -> dict:
+    def movers(self, symbol_id: str, sort: str) -> dict:
         """
         Retrieve market movers data for a given symbol and sort order from the Schwab API
 
@@ -318,23 +286,16 @@ class SchwabAPI:
             dict: Movers data as a dictionary, or error details if retrieval fails
         """
         api_url = f"{self.market_data_base_url}/movers/{symbol_id}?sort={sort}"
-        response = requests.get(
-            api_url,
-            headers=self.headers,
-            timeout=30
-        )
+        response = requests.get(api_url, headers=self.headers, timeout=30)
         if response.status_code == 200:
             return response.json()
         return {
-            'status_code': response.status_code,
-            'message': 'Failed to retrieve data',
-            'content': response.text
+            "status_code": response.status_code,
+            "message": "Failed to retrieve data",
+            "content": response.text,
         }
 
-    def market_cap(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> float:
+    def market_cap(self, stock_ticker: Optional[str] = None) -> float:
         """
         Retrieve the market capitalization value for a given stock ticker.
 
@@ -345,16 +306,13 @@ class SchwabAPI:
             float: Market capitalization value as a float.
         """
         stock_fundamental = (
-            self._stock_fundamental if self.stock_ticker
+            self._stock_fundamental
+            if self.stock_ticker
             else self.stock_fundamental(stock_ticker)
         )
-        return stock_fundamental['instruments'][0]['fundamental']['marketCap']
+        return stock_fundamental["instruments"][0]["fundamental"]["marketCap"]
 
-    def average_volume(
-            self,
-            output: int,
-            stock_ticker: Optional[str] = None
-        ):
+    def average_volume(self, output: int, stock_ticker: Optional[str] = None):
         """
         Retrieve the average trading volume for a stock over a specified period
 
@@ -366,22 +324,16 @@ class SchwabAPI:
             Average trading volume for the specified period, or None if unavailable
         """
         stock_fundamental = (
-            self._stock_fundamental if self.stock_ticker
+            self._stock_fundamental
+            if self.stock_ticker
             else self.stock_fundamental(stock_ticker)
         )
 
-        volume_map = {
-            1: 'avg1DayVolume',
-            10: 'avg10DaysVolume',
-            30: 'avg3MonthVolume'
-        }
+        volume_map = {1: "avg1DayVolume", 10: "avg10DaysVolume", 30: "avg3MonthVolume"}
         key = volume_map.get(output)
-        return stock_fundamental['instruments'][0]['fundamental'][key] if key else None
+        return stock_fundamental["instruments"][0]["fundamental"][key] if key else None
 
-    def stock_fundamental(
-            self,
-            stock_ticker: Optional[str] = None
-        ):
+    def stock_fundamental(self, stock_ticker: Optional[str] = None):
         """
         Retrieve fundamental financial data for a specified stock ticker from the Schwab API
 
@@ -393,23 +345,16 @@ class SchwabAPI:
         """
         ticker = self.stock_ticker if self.stock_ticker else stock_ticker
         api_url = f"{self.market_data_base_url}/instruments?symbol={ticker}&projection=fundamental"
-        response = requests.get(
-            api_url,
-            headers=self.headers,
-            timeout=30
-        )
+        response = requests.get(api_url, headers=self.headers, timeout=30)
         if response.status_code == 200:
             return response.json()
         return {
-            'status_code': response.status_code,
-            'message': 'Failed to retrieve data',
-            'content': response.text
+            "status_code": response.status_code,
+            "message": "Failed to retrieve data",
+            "content": response.text,
         }
 
-    def quote_single(
-            self,
-            stock_ticker: Optional[str] = None
-        ):
+    def quote_single(self, stock_ticker: Optional[str] = None):
         """
         Retrieve real-time quote data for a single stock ticker symbol
 
@@ -421,28 +366,19 @@ class SchwabAPI:
         """
         if stock_ticker is not None:
             api_url = f"{self.market_data_base_url}/{stock_ticker}/quotes"
-            response = requests.get(
-                api_url,
-                headers=self.headers,
-                timeout=30
-            )
+            response = requests.get(api_url, headers=self.headers, timeout=30)
             if response.status_code == 200:
                 return response.json()
             return {
-                'status_code': response.status_code,
-                'message': 'Failed to retrieve data',
-                'content': response.text
+                "status_code": response.status_code,
+                "message": "Failed to retrieve data",
+                "content": response.text,
             }
         if self.stock_ticker is not None:
             return self._quote_single
-        raise ValueError(
-            "stock_ticker needed in constructor or as parameter"
-        )
+        raise ValueError("stock_ticker needed in constructor or as parameter")
 
-    def last_price(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> Optional[float]:
+    def last_price(self, stock_ticker: Optional[str] = None) -> Optional[float]:
         """
         Retrieve the last traded price for a given stock ticker symbol
 
@@ -453,23 +389,18 @@ class SchwabAPI:
             float | None: Last traded price as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(
-                stock_ticker=stock_ticker
-            )
+            request = self.quote_single(stock_ticker=stock_ticker)
             try:
-                return request[stock_ticker]['quote']['lastPrice']
+                return request[stock_ticker]["quote"]["lastPrice"]
             except KeyError:
                 return None
         else:
             try:
-                return self._quote_single[self.stock_ticker]['quote']['lastPrice']
+                return self._quote_single[self.stock_ticker]["quote"]["lastPrice"]
             except KeyError:
                 return None
 
-    def change_percentage(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> Optional[float]:
+    def change_percentage(self, stock_ticker: Optional[str] = None) -> Optional[float]:
         """
         Retrieve the percentage change in price for a given stock ticker symbol
 
@@ -479,23 +410,20 @@ class SchwabAPI:
             float | None: Percentage change in price as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(
-                stock_ticker=stock_ticker
-            )
+            request = self.quote_single(stock_ticker=stock_ticker)
             try:
-                return request[stock_ticker]['quote']['netPercentChange']
+                return request[stock_ticker]["quote"]["netPercentChange"]
             except KeyError:
                 return None
         else:
             try:
-                return self._quote_single[self.stock_ticker]['quote']['netPercentChange']
+                return self._quote_single[self.stock_ticker]["quote"][
+                    "netPercentChange"
+                ]
             except KeyError:
                 return None
 
-    def volume(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> Optional[float]:
+    def volume(self, stock_ticker: Optional[str] = None) -> Optional[float]:
         """
         Retrieve the total trading volume for a given stock ticker symbol
 
@@ -506,16 +434,11 @@ class SchwabAPI:
             float | None: Total trading volume as a float, or None if not available
         """
         if stock_ticker is not None:
-            request = self.quote_single(
-                stock_ticker=stock_ticker
-            )
-            return request[stock_ticker]['quote']['totalVolume']
-        return self._quote_single[self.stock_ticker]['quote']['totalVolume']
+            request = self.quote_single(stock_ticker=stock_ticker)
+            return request[stock_ticker]["quote"]["totalVolume"]
+        return self._quote_single[self.stock_ticker]["quote"]["totalVolume"]
 
-    def quote_time(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> datetime | str:
+    def quote_time(self, stock_ticker: Optional[str] = None) -> datetime | str:
         """
         Retrieve the timestamp of the latest quote for a given stock ticker symbol
 
@@ -527,25 +450,18 @@ class SchwabAPI:
         """
         helper = Helpers()
         if stock_ticker:
-            quote_data = self.quote_single(
-                stock_ticker=stock_ticker
-            )
+            quote_data = self.quote_single(stock_ticker=stock_ticker)
         else:
             quote_data = self._quote_single[self.stock_ticker]
 
         try:
-            quote_time = quote_data['quote']['quoteTime']
+            quote_time = quote_data["quote"]["quoteTime"]
         except KeyError as e:
             raise KeyError(f"Missing key in quote data: {e}") from e
 
-        return helper.detect_and_convert_timestamp(
-            timestamp=quote_time
-        )
+        return helper.detect_and_convert_timestamp(timestamp=quote_time)
 
-    def company_name(
-            self,
-            stock_ticker: Optional[str] = None
-        ) -> Optional[str]:
+    def company_name(self, stock_ticker: Optional[str] = None) -> Optional[str]:
         """
         Retrieve the company name for a given stock ticker symbol
 
@@ -556,16 +472,14 @@ class SchwabAPI:
             str | None: The company name associated with the stock ticker, or None if not found
         """
         if stock_ticker is not None:
-            request = self.quote_single(
-                stock_ticker=stock_ticker
-            )
+            request = self.quote_single(stock_ticker=stock_ticker)
             try:
-                return request[stock_ticker]['reference']['description']
+                return request[stock_ticker]["reference"]["description"]
             except KeyError:
                 return None
         else:
             try:
-                return self._quote_single[self.stock_ticker]['reference']['description']
+                return self._quote_single[self.stock_ticker]["reference"]["description"]
             except KeyError:
                 return None
 
@@ -574,14 +488,13 @@ class SchwabAPI:
 # YAHOO FINANCE API
 # ============================================================================
 
+
 class SearchYahooFinance:
     """Yahoo Finance API wrapper with lazy loading"""
 
     def __init__(
-            self,
-            ticker: Optional[str] = None,
-            company_name: Optional[str] = None
-        ):
+        self, ticker: Optional[str] = None, company_name: Optional[str] = None
+    ):
         """
         Initialize a SearchYahooFinance instance with optional ticker and company name
 
@@ -614,115 +527,115 @@ class SearchYahooFinance:
         """
         Retrieve the country where the company is based from Yahoo Finance data
         """
-        return self._get_info('country')
+        return self._get_info("country")
 
     def website(self):
         """
         Retrieve the company's website URL from Yahoo Finance data
         """
-        return self._get_info('website')
+        return self._get_info("website")
 
     def business_summary(self):
         """
         Retrieve a detailed summary of the company's business operations
         """
-        return self._get_info('longBusinessSummary')
+        return self._get_info("longBusinessSummary")
 
     def short_ratio_date(self):
         """
         Retrieve the date of the latest short interest ratio for the current ticker
         """
-        return self._get_info('dateShortInterest')
+        return self._get_info("dateShortInterest")
 
     def industry(self):
         """
         Retrieve the industry information for the current ticker
         """
-        return self._get_info('industry')
+        return self._get_info("industry")
 
     def sector(self):
         """
         Retrieve the sector information for the current ticker
         """
-        return self._get_info('sector')
+        return self._get_info("sector")
 
     def operating_cash_flow(self):
         """
         Retrieve the operating cash flow value for the current ticker
         """
-        return self._get_info('operatingCashflow')
+        return self._get_info("operatingCashflow")
 
     def shares_short(self):
         """
         Retrieve the number of shares currently shorted for the ticker
         """
-        return self._get_info('sharesShort')
+        return self._get_info("sharesShort")
 
     def shares_short_previous_month_date(self):
         """
         Retrieve the date of the previous month's short interest for the current ticker
         """
-        return self._get_info('sharesShortPreviousMonthDate')
+        return self._get_info("sharesShortPreviousMonthDate")
 
     def shares_short_prior_month(self):
         """
         Retrieve the number of shares shorted in the prior month for the current ticker
         """
-        return self._get_info('sharesShortPriorMonth')
+        return self._get_info("sharesShortPriorMonth")
 
     def shares_percent_shares_outstanding(self):
         """
         Retrieve the percentage of shares outstanding that are currently shorted for the ticker
         """
-        return self._get_info('sharesPercentSharesOut')
+        return self._get_info("sharesPercentSharesOut")
 
     def short_percent_float(self):
         """
         Retrieve the percentage of float shares that are currently shorted for the ticker
         """
-        return self._get_info('shortPercentOfFloat')
+        return self._get_info("shortPercentOfFloat")
 
     def short_ratio(self):
         """
         Retrieve the short interest ratio for the current ticker
         """
-        return self._get_info('shortRatio')
+        return self._get_info("shortRatio")
 
     def avg_volume_10d(self):
         """
         Retrieve the average daily trading volume over the past 10 days for the current ticker
         """
-        return self._get_info('averageVolume10days')
+        return self._get_info("averageVolume10days")
 
     def avg_volume_3m(self):
         """
         Retrieve the average daily trading volume over the past 3 months for the current ticker
         """
-        return self._get_info('averageVolume')
+        return self._get_info("averageVolume")
 
     def held_institutions(self):
         """
         Retrieve the percentage of shares held by institutional investors for the current ticker
         """
-        return self._get_info('heldPercentInstitutions')
+        return self._get_info("heldPercentInstitutions")
 
     def held_insiders(self):
         """
         Retrieve the percentage of shares held by company insiders for the current ticker
         """
-        return self._get_info('heldPercentInsiders')
+        return self._get_info("heldPercentInsiders")
 
     def market_cap(self):
         """
         Retrieve the market capitalization value for the current ticker
         """
-        return self._get_info('marketCap')
+        return self._get_info("marketCap")
 
     def stock_float(self):
         """
         Retrieve the number of float shares available for trading for the current ticker
         """
-        return self._get_info('floatShares')
+        return self._get_info("floatShares")
 
     def company_news(self):
         """
@@ -736,6 +649,7 @@ class SearchYahooFinance:
 # ALPHA VANTAGE API
 # ============================================================================
 
+
 class AlphaVantageAPI:
     """
     Alpha Vantage API client for top gainers - FREE SERVICE
@@ -744,12 +658,9 @@ class AlphaVantageAPI:
     - Top gainers and losers stock tickers
     """
 
-    ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+    ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
-    def __init__(
-            self,
-            api_key: Optional[str] = None
-        ):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize Alpha Vantage API client
         Args:
@@ -764,15 +675,12 @@ class AlphaVantageAPI:
             )
             raise ValueError(msg)
 
-        self.base_url = 'https://www.alphavantage.co/query'
+        self.base_url = "https://www.alphavantage.co/query"
         self.session = requests.Session()
         # HTML Basic Auth with API key as username
-        self.session.auth = (self.api_key, '')
+        self.session.auth = (self.api_key, "")
 
-    def _make_request(
-        self,
-        params: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+    def _make_request(self, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Make authenticated request to Alpha Vantage API
 
@@ -786,11 +694,7 @@ class AlphaVantageAPI:
             requests.exceptions.RequestException: If request fails
         """
         try:
-            response = self.session.get(
-                self.base_url,
-                params=params,
-                timeout=30
-            )
+            response = self.session.get(self.base_url, params=params, timeout=30)
             response.raise_for_status()
             return response.json()
 
@@ -823,18 +727,18 @@ class AlphaVantageAPI:
         """
 
         params = {
-            'function': 'TOP_GAINERS_LOSERS',
-            'apikey': self.api_key,
+            "function": "TOP_GAINERS_LOSERS",
+            "apikey": self.api_key,
         }
 
         try:
             data = self._make_request(params=params)
 
             # Extract top gainers list
-            top_gainers_list = data.get('top_gainers', [])
+            top_gainers_list = data.get("top_gainers", [])
 
             # Return list of tickers only
-            return [stock['ticker'] for stock in top_gainers_list if 'ticker' in stock]
+            return [stock["ticker"] for stock in top_gainers_list if "ticker" in stock]
 
         except requests.exceptions.Timeout:
             print("API request timed out")
@@ -851,6 +755,7 @@ class AlphaVantageAPI:
 # POLYGON API
 # ============================================================================
 
+
 class PolygonAPI:
     """
     Polygon.io API client for top gainers and top market movers - PAID SERVICE
@@ -859,12 +764,9 @@ class PolygonAPI:
     - Top gainers stock tickers
     """
 
-    POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
+    POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
 
-    def __init__(
-            self,
-            api_key: Optional[str] = None
-        ):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize Polygon API client
         Args:
@@ -889,17 +791,14 @@ class PolygonAPI:
                        Returns empty list if API call fails.
         """
         try:
-            tickers = self.client.get_snapshot_direction(
-                "stocks",
-                direction="gainers"
-            )
+            tickers = self.client.get_snapshot_direction("stocks", direction="gainers")
 
             result = []
             for item in tickers:
                 # Verify this is a TickerSnapshot and a float
-                if (isinstance(item, TickerSnapshot)
-                    and
-                        isinstance(item.todays_change_percent, float)):
+                if isinstance(item, TickerSnapshot) and isinstance(
+                    item.todays_change_percent, float
+                ):
                     result.append(item.ticker)
 
             return result
@@ -916,6 +815,7 @@ class PolygonAPI:
 # FINANCIAL MODELING PREP (FMP) API
 # ============================================================================
 
+
 class FMPApi:
     """
     Financial Modeling Prep (FMP) API client for market data - FREE and PAID SERVICE
@@ -927,12 +827,9 @@ class FMPApi:
     - Top gainers/losers by stock exchange
     """
 
-    FMP_API_KEY = os.getenv('FMP_API_KEY')
+    FMP_API_KEY = os.getenv("FMP_API_KEY")
 
-    def __init__(
-            self,
-            api_key: Optional[str] = None
-        ):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize FMP API client
 
@@ -946,15 +843,13 @@ class FMPApi:
                 "environment variable or pass api_key parameter"
             )
             raise ValueError(msg)
-        self.base_url = 'https://financialmodelingprep.com/stable'
+        self.base_url = "https://financialmodelingprep.com/stable"
         self.session = requests.Session()
         # HTTP Basic Auth with API key as username
-        self.session.auth = (self.api_key, '')
+        self.session.auth = (self.api_key, "")
 
     def _make_request(
-        self,
-        endpoint: str,
-        params: Optional[Dict] = None
+        self, endpoint: str, params: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Make authenticated request to FMP API
@@ -972,11 +867,7 @@ class FMPApi:
         url = f"{self.base_url}{endpoint}"
 
         try:
-            response = self.session.get(
-                url=url,
-                params=params,
-                timeout=30
-            )
+            response = self.session.get(url=url, params=params, timeout=30)
             response.raise_for_status()
             return response.json()
 
@@ -1000,19 +891,19 @@ class FMPApi:
             raise
 
     def get_biggest_gainers(self) -> list[str]:
-        '''
+        """
         Fetches top gaining stock tickers from FMP API.
         Returns:
             list[str]: List of ticker symbols for top gainers.
                     Returns empty list if API call fails.
-        '''
-        endpoint = f'/biggest-gainers?apikey={self.__class__.FMP_API_KEY}'
+        """
+        endpoint = f"/biggest-gainers?apikey={self.__class__.FMP_API_KEY}"
 
         try:
             data = self._make_request(endpoint=endpoint)
 
             # Return list of tickers only
-            return [stock['symbol'] for stock in data if 'symbol' in stock]
+            return [stock["symbol"] for stock in data if "symbol" in stock]
 
         except requests.exceptions.Timeout:
             print("API request timed out")
@@ -1029,6 +920,7 @@ class FMPApi:
 # ALPACA API
 # ============================================================================
 
+
 class AlpacaAPI:
     """
     Alpaca API client for market data - PAID SERVICE
@@ -1041,14 +933,14 @@ class AlpacaAPI:
     - Most actively traded stocks
     """
 
-    ALPACA_CLIENT_ID = os.getenv('ALPACA_CLIENT_ID')
-    ALPACA_CLIENT_SECRET = os.getenv('ALPACA_CLIENT_SECRET')
+    ALPACA_CLIENT_ID = os.getenv("ALPACA_CLIENT_ID")
+    ALPACA_CLIENT_SECRET = os.getenv("ALPACA_CLIENT_SECRET")
 
     def __init__(
-            self,
-            alpaca_client_id: Optional[str] = None,
-            alpaca_client_secret: Optional[str] = None
-        ):
+        self,
+        alpaca_client_id: Optional[str] = None,
+        alpaca_client_secret: Optional[str] = None,
+    ):
         """
         Initialize Alpaca API client
         Args:
@@ -1063,7 +955,9 @@ class AlpacaAPI:
             )
             raise ValueError(msg)
 
-        self.alpaca_client_secret = alpaca_client_secret or self.__class__.ALPACA_CLIENT_SECRET
+        self.alpaca_client_secret = (
+            alpaca_client_secret or self.__class__.ALPACA_CLIENT_SECRET
+        )
 
         if not alpaca_client_secret:
             msg = (
@@ -1072,13 +966,11 @@ class AlpacaAPI:
             )
             raise ValueError(msg)
 
-        self.base_url = 'https://data.alpaca.markets/v1beta1'
+        self.base_url = "https://data.alpaca.markets/v1beta1"
         self.session = requests.Session()
 
     def _make_request(
-        self,
-        endpoint: str,
-        params: Optional[Dict] = None
+        self, endpoint: str, params: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Make authenticated request to Alpaca API
@@ -1098,16 +990,11 @@ class AlpacaAPI:
         headers = {
             "accept": "application/json",
             "APCA-API-KEY-ID": self.alpaca_client_id,
-            "APCA-API-SECRET-KEY": self.alpaca_client_secret
+            "APCA-API-SECRET-KEY": self.alpaca_client_secret,
         }
 
         try:
-            response = self.session.get(
-                url,
-                headers=headers,
-                params=params,
-                timeout=30
-            )
+            response = self.session.get(url, headers=headers, params=params, timeout=30)
             response.raise_for_status()
             return response.json()
 
@@ -1131,11 +1018,9 @@ class AlpacaAPI:
             raise
 
     def top_market_movers(
-        self,
-        market_type: str = 'stocks',
-        top: int = 10
+        self, market_type: str = "stocks", top: int = 10
     ) -> list[str]:
-        '''
+        """
         Fetches top gaining stock tickers from Alpaca API.
 
         Args:
@@ -1153,22 +1038,19 @@ class AlpacaAPI:
             ... )
             >>> print(gainers)
             ['AAPL', 'TSLA', 'NVDA', ...]
-        '''
+        """
         endpoint = f"/screener/{market_type}/movers"
 
         params = {
-            'top': top,
+            "top": top,
         }
 
         try:
-            data = self._make_request(
-                endpoint=endpoint,
-                params=params
-            )
-            raw_result = data.get('gainers', [])
+            data = self._make_request(endpoint=endpoint, params=params)
+            raw_result = data.get("gainers", [])
 
             # Return list of tickers only
-            return [stock['symbol'] for stock in raw_result if 'symbol' in stock]
+            return [stock["symbol"] for stock in raw_result if "symbol" in stock]
 
         except requests.exceptions.Timeout:
             print("API request timed out")
@@ -1180,12 +1062,8 @@ class AlpacaAPI:
             print(f"Error parsing API response: {e}")
             return []
 
-    def most_active_stocks(
-        self,
-        by: str = 'volume',
-        top: int = 10
-    ) -> list[str]:
-        '''
+    def most_active_stocks(self, by: str = "volume", top: int = 10) -> list[str]:
+        """
         Fetches most actively traded stock tickers from Alpaca API.
         Args:
             by: Criteria to sort by ('volume' or 'trades') (default: 'volume')
@@ -1200,15 +1078,15 @@ class AlpacaAPI:
             ... )
             >>> print(active_stocks)
             ['AAPL', 'TSLA', 'NVDA', ...]
-        '''
+        """
         endpoint = f"/screener/stocks/most-actives?by={by}?top={top}"
 
         try:
             data = self._make_request(endpoint=endpoint)
-            raw_result = data.get('most_actives', [])
+            raw_result = data.get("most_actives", [])
 
             # Return list of tickers only
-            return [stock['symbol'] for stock in raw_result if 'symbol' in stock]
+            return [stock["symbol"] for stock in raw_result if "symbol" in stock]
 
         except requests.exceptions.Timeout:
             print("API request timed out")
@@ -1225,6 +1103,7 @@ class AlpacaAPI:
 # INTRINIO API
 # ============================================================================
 
+
 class IntrinioAPI:
     """
     Intrinio API client for market data - PAID SERVICE
@@ -1235,12 +1114,9 @@ class IntrinioAPI:
     - Top gainers and losers by stock exchange
     """
 
-    INTRINIO_API_KEY = os.getenv('INTRINIO_API_KEY')
+    INTRINIO_API_KEY = os.getenv("INTRINIO_API_KEY")
 
-    def __init__(
-            self,
-            api_key: Optional[str] = None
-        ):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize Intrinio API client
 
@@ -1257,15 +1133,13 @@ class IntrinioAPI:
             )
             raise ValueError(msg)
 
-        self.base_url = 'https://api-v2.intrinio.com'
+        self.base_url = "https://api-v2.intrinio.com"
         self.session = requests.Session()
         # HTTP Basic Auth with API key as username
-        self.session.auth = (self.api_key, '')
+        self.session.auth = (self.api_key, "")
 
     def _make_request(
-        self,
-        endpoint: str,
-        params: Optional[Dict] = None
+        self, endpoint: str, params: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
         Make authenticated request to Intrinio API
@@ -1304,10 +1178,10 @@ class IntrinioAPI:
 
     def get_stock_exchange_gainers(
         self,
-        identifier: str = 'USCOMP',
+        identifier: str = "USCOMP",
         min_price: Optional[float] = None,
         page_size: int = 100,
-        source: Optional[str] = None
+        source: Optional[str] = None,
     ) -> List[str]:
         """
         Get top gaining securities tickers for a stock exchange
@@ -1336,33 +1210,29 @@ class IntrinioAPI:
             >>> print(gainers[:10])
             ['AAPL', 'TSLA', 'NVDA', ...]
         """
-        endpoint = f'/stock_exchanges/{identifier}/gainers'
+        endpoint = f"/stock_exchanges/{identifier}/gainers"
 
-        params = {
-            'page_size': page_size
-        }
+        params = {"page_size": page_size}
 
         if min_price is not None:
-            params['min_price'] = min_price
+            params["min_price"] = min_price
 
         if source is not None:
-            params['source'] = source
+            params["source"] = source
 
         try:
             data = self._make_request(endpoint, params)
-            securities = data.get('securities', [])
+            securities = data.get("securities", [])
 
             # Extract just the ticker symbols
             tickers = []
             for security in securities:
-                security_info = security.get('security', {})
-                ticker = security_info.get('ticker')
+                security_info = security.get("security", {})
+                ticker = security_info.get("ticker")
                 if ticker:
                     tickers.append(ticker)
 
-            LOGGER.info(
-                "Retrieved %d gainers from %s", len(tickers), identifier
-            )
+            LOGGER.info("Retrieved %d gainers from %s", len(tickers), identifier)
             return tickers
 
         except requests.exceptions.RequestException as e:
@@ -1374,10 +1244,10 @@ class IntrinioAPI:
 
     def get_stock_exchange_losers(
         self,
-        identifier: str = 'USCOMP',
+        identifier: str = "USCOMP",
         min_price: Optional[float] = None,
         page_size: int = 100,
-        source: Optional[str] = None
+        source: Optional[str] = None,
     ) -> List[str]:
         """
         Get top losing securities tickers for a stock exchange
@@ -1391,33 +1261,29 @@ class IntrinioAPI:
         Returns:
             List of ticker symbols for top losers
         """
-        endpoint = f'/stock_exchanges/{identifier}/losers'
+        endpoint = f"/stock_exchanges/{identifier}/losers"
 
-        params = {
-            'page_size': page_size
-        }
+        params = {"page_size": page_size}
 
         if min_price is not None:
-            params['min_price'] = min_price
+            params["min_price"] = min_price
 
         if source is not None:
-            params['source'] = source
+            params["source"] = source
 
         try:
             data = self._make_request(endpoint, params)
-            securities = data.get('securities', [])
+            securities = data.get("securities", [])
 
             # Extract just the ticker symbols
             tickers = []
             for security in securities:
-                security_info = security.get('security', {})
-                ticker = security_info.get('ticker')
+                security_info = security.get("security", {})
+                ticker = security_info.get("ticker")
                 if ticker:
                     tickers.append(ticker)
 
-            LOGGER.info(
-                "Retrieved %d losers from %s", len(tickers), identifier
-            )
+            LOGGER.info("Retrieved %d losers from %s", len(tickers), identifier)
             return tickers
 
         except requests.exceptions.RequestException as e:

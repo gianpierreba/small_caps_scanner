@@ -24,4 +24,4 @@ from __version__ import __version__, __version_info__
 
 __author__ = "Gianpierre Benites"
 __license__ = "MIT"
-__all__ = ['__version__', '__version_info__']
+__all__ = ["__version__", "__version_info__"]

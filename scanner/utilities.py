@@ -10,16 +10,20 @@ This module contains:
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
+
 from helpers.helpers import Helpers
+
 from .apis import SearchYahooFinance
 
 # ============================================================================
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class StockQuoteData:
     """Data structure for stock quotes"""
+
     last_price: Optional[float] = None
     change_percentage: Optional[float] = None
     volume: Optional[float] = None
@@ -34,6 +38,7 @@ class StockQuoteData:
 @dataclass
 class NewsItem:
     """Data structure for news items"""
+
     uuid_news: str
     title: str
     publisher: str
@@ -47,13 +52,11 @@ class NewsItem:
 # UTILITY CLASSES
 # ============================================================================
 
+
 class Searching:
     """Utility class for searching stock information"""
 
-    def __init__(
-            self,
-            stock_ticker: str
-        ):
+    def __init__(self, stock_ticker: str):
         self.stock_ticker = stock_ticker
 
     def search_stock(self):
@@ -65,28 +68,30 @@ class Searching:
         print(f"Ticker -> {self.stock_ticker}")
 
         stock_float = (
-            helper.format_number(search.stock_float())
-            if search.stock_float() else None
+            helper.format_number(search.stock_float()) if search.stock_float() else None
         )
         market_cap = (
-            helper.format_number(search.market_cap())
-            if search.market_cap() else None
+            helper.format_number(search.market_cap()) if search.market_cap() else None
         )
         held_insiders = (
             helper.format_percentage(search.held_insiders())
-            if search.held_insiders() else None
+            if search.held_insiders()
+            else None
         )
         held_institutions = (
             helper.format_percentage(search.held_institutions())
-            if search.held_institutions() else None
+            if search.held_institutions()
+            else None
         )
         avg_vol_3_month = (
             helper.format_number(search.avg_volume_3m())
-            if search.avg_volume_3m() else None
+            if search.avg_volume_3m()
+            else None
         )
         avg_vol_10_day = (
             helper.format_number(search.avg_volume_10d())
-            if search.avg_volume_10d() else None
+            if search.avg_volume_10d()
+            else None
         )
 
         print(f"Stock Float -> {stock_float}")

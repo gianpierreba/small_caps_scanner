@@ -13,16 +13,19 @@ Available Scanners:
 - AfterMarket: After-market scanner (UNDER DEVELOPMENT - Not exported)
 """
 
-from .scanner import Scanner, PreMarket, RegularMarket
 # AfterMarket is commented out in scanner.py - under development
 from .apis import SchwabAPI, SearchYahooFinance
+from .scanner import PreMarket, RegularMarket, Scanner
 from .scrapers import ScanStockAnalysis
 from .utilities import Searching
 
 __all__ = [
-    'Scanner', 'PreMarket', 'RegularMarket',
+    "Scanner",
+    "PreMarket",
+    "RegularMarket",
     # 'AfterMarket',  # UNDER DEVELOPMENT - Will be added in future release
-    'SchwabAPI', 'SearchYahooFinance',
-    'ScanStockAnalysis',
-    'Searching'
+    "SchwabAPI",
+    "SearchYahooFinance",
+    "ScanStockAnalysis",
+    "Searching",
 ]

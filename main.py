@@ -38,6 +38,7 @@ Author: Gianpierre Benites
 License: See LICENSE file
 Version: See __version__.py
 """
+
 import platform
 import signal
 import sys
@@ -194,8 +195,7 @@ if __name__ == "__main__":
 
     # Pre-Market Scanners - ACTIVE
     # Comment this out if you only want Regular Market scanner
-    start_scanner_thread(market_type=MarketType.PRE_MARKET,
-                         sleep_time=sleep_time)
+    start_scanner_thread(market_type=MarketType.PRE_MARKET, sleep_time=sleep_time)
 
     # Regular-Market Scanners - ACTIVE
     # Comment this out if you only want Pre-Market scanner
@@ -213,11 +213,13 @@ if __name__ == "__main__":
     print("Scanners running. Press Ctrl+C to stop.")
     print("⚠️  REMINDER: Remember to attribute data to StockAnalysis.com")
     print("    Monitor for HTTP 403/429 errors and stop immediately if blocked.")
-    print("\nℹ️  NOTE: After-market scanner is currently under development and disabled.\n")
+    print(
+        "\nℹ️  NOTE: After-market scanner is currently under development and disabled.\n"
+    )
 
     # Keep the main thread alive (cross-platform solution)
     # signal.pause() is only available on Unix systems
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         # On Windows, use a loop with sleep to keep the main thread alive
         try:
             while True:

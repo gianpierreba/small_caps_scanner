@@ -22,15 +22,17 @@ Usage:
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 
 def load_env_file():
     """Load environment variables from .env file if it exists"""
     try:
-        from dotenv import load_dotenv  # pylint: disable=import-outside-toplevel
-        env_path = Path(__file__).parent / '.env'
+        from dotenv import \
+            load_dotenv  # pylint: disable=import-outside-toplevel
+
+        env_path = Path(__file__).parent / ".env"
         if env_path.exists():
             load_dotenv(dotenv_path=env_path)
             return True
@@ -48,28 +50,18 @@ load_env_file()
 class DatabaseConfig:
     """Database connection configuration"""
 
-    host: str = field(
-        default_factory=lambda: os.getenv('DB_HOST', 'localhost')
-    )
-    port: int = field(
-        default_factory=lambda: int(os.getenv('DB_PORT', '5432'))
-    )
-    name: str = field(
-        default_factory=lambda: os.getenv('DB_NAME', 'trading')
-    )
-    user: str = field(
-        default_factory=lambda: os.getenv('DB_USER', 'postgres')
-    )
-    password: str = field(
-        default_factory=lambda: os.getenv('DB_PASSWORD', '')
-    )
+    host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
+    port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "5432")))
+    name: str = field(default_factory=lambda: os.getenv("DB_NAME", "trading"))
+    user: str = field(default_factory=lambda: os.getenv("DB_USER", "postgres"))
+    password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
 
     # Connection pool settings
     min_connections: int = field(
-        default_factory=lambda: int(os.getenv('DB_MIN_CONN', '5'))
+        default_factory=lambda: int(os.getenv("DB_MIN_CONN", "5"))
     )
     max_connections: int = field(
-        default_factory=lambda: int(os.getenv('DB_MAX_CONN', '20'))
+        default_factory=lambda: int(os.getenv("DB_MAX_CONN", "20"))
     )
 
     def validate(self) -> list[str]:
@@ -124,11 +116,9 @@ class DatabaseConfig:
 class SchwabAPIConfig:
     """Charles Schwab API configuration"""
 
-    app_key: Optional[str] = field(
-        default_factory=lambda: os.getenv('APP_KEY_SCHWAB')
-    )
+    app_key: Optional[str] = field(default_factory=lambda: os.getenv("APP_KEY_SCHWAB"))
     client_secret: Optional[str] = field(
-        default_factory=lambda: os.getenv('CLIENT_SECRET_SCHWAB')
+        default_factory=lambda: os.getenv("CLIENT_SECRET_SCHWAB")
     )
 
     def validate(self) -> list[str]:
@@ -141,7 +131,9 @@ class SchwabAPIConfig:
         errors = []
 
         if not self.app_key:
-            errors.append("APP_KEY_SCHWAB is required (get from https://developer.schwab.com/)")
+            errors.append(
+                "APP_KEY_SCHWAB is required (get from https://developer.schwab.com/)"
+            )
 
         if not self.client_secret:
             errors.append("CLIENT_SECRET_SCHWAB is required")
@@ -154,22 +146,20 @@ class OptionalAPIConfig:
     """Optional third-party API configurations"""
 
     alpha_vantage_key: Optional[str] = field(
-        default_factory=lambda: os.getenv('ALPHA_VANTAGE_API_KEY')
+        default_factory=lambda: os.getenv("ALPHA_VANTAGE_API_KEY")
     )
     polygon_key: Optional[str] = field(
-        default_factory=lambda: os.getenv('POLYGON_API_KEY')
+        default_factory=lambda: os.getenv("POLYGON_API_KEY")
     )
-    fmp_key: Optional[str] = field(
-        default_factory=lambda: os.getenv('FMP_API_KEY')
-    )
+    fmp_key: Optional[str] = field(default_factory=lambda: os.getenv("FMP_API_KEY"))
     alpaca_client_id: Optional[str] = field(
-        default_factory=lambda: os.getenv('ALPACA_CLIENT_ID')
+        default_factory=lambda: os.getenv("ALPACA_CLIENT_ID")
     )
     alpaca_client_secret: Optional[str] = field(
-        default_factory=lambda: os.getenv('ALPACA_CLIENT_SECRET')
+        default_factory=lambda: os.getenv("ALPACA_CLIENT_SECRET")
     )
     intrinio_key: Optional[str] = field(
-        default_factory=lambda: os.getenv('INTRINIO_API_KEY')
+        default_factory=lambda: os.getenv("INTRINIO_API_KEY")
     )
 
     def get_configured_apis(self) -> list[str]:
@@ -182,15 +172,15 @@ class OptionalAPIConfig:
         configured = []
 
         if self.alpha_vantage_key:
-            configured.append('Alpha Vantage')
+            configured.append("Alpha Vantage")
         if self.polygon_key:
-            configured.append('Polygon.io')
+            configured.append("Polygon.io")
         if self.fmp_key:
-            configured.append('Financial Modeling Prep')
+            configured.append("Financial Modeling Prep")
         if self.alpaca_client_id and self.alpaca_client_secret:
-            configured.append('Alpaca Markets')
+            configured.append("Alpaca Markets")
         if self.intrinio_key:
-            configured.append('Intrinio')
+            configured.append("Intrinio")
 
         return configured
 
@@ -201,23 +191,21 @@ class ApplicationConfig:
 
     # Scanner settings
     sleep_time: int = field(
-        default_factory=lambda: int(os.getenv('SCANNER_SLEEP_TIME', '10'))
+        default_factory=lambda: int(os.getenv("SCANNER_SLEEP_TIME", "10"))
     )
     output_length: int = field(
-        default_factory=lambda: int(os.getenv('SCANNER_OUTPUT_LENGTH', '15'))
+        default_factory=lambda: int(os.getenv("SCANNER_OUTPUT_LENGTH", "15"))
     )
 
     # Logging settings
-    log_level: str = field(
-        default_factory=lambda: os.getenv('LOG_LEVEL', 'INFO')
-    )
+    log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
     log_format: str = field(
-        default_factory=lambda: os.getenv('LOG_FORMAT', 'text') # 'text' or 'json'
+        default_factory=lambda: os.getenv("LOG_FORMAT", "text")  # 'text' or 'json'
     )
 
     # Environment
     environment: str = field(
-        default_factory=lambda: os.getenv('ENVIRONMENT', 'development')
+        default_factory=lambda: os.getenv("ENVIRONMENT", "development")
     )
 
     def validate(self) -> list[str]:
@@ -245,19 +233,19 @@ class ApplicationConfig:
                 f"SCANNER_OUTPUT_LENGTH must be >= 1, got: {self.output_length}"
             )
 
-        valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if self.log_level.upper() not in valid_log_levels:
             errors.append(
                 f"LOG_LEVEL must be one of {valid_log_levels}, got: {self.log_level}"
             )
 
-        valid_log_formats = ['text', 'json']
+        valid_log_formats = ["text", "json"]
         if self.log_format not in valid_log_formats:
             errors.append(
                 f"LOG_FORMAT must be one of {valid_log_formats}, got: {self.log_format}"
             )
 
-        valid_environments = ['development', 'testing', 'production']
+        valid_environments = ["development", "testing", "production"]
         if self.environment not in valid_environments:
             errors.append(
                 f"ENVIRONMENT must be one of {valid_environments}, got: {self.environment}"
@@ -268,12 +256,12 @@ class ApplicationConfig:
     @property
     def is_production(self) -> bool:
         """Check if running in production environment"""
-        return self.environment == 'production'
+        return self.environment == "production"
 
     @property
     def is_development(self) -> bool:
         """Check if running in development environment"""
-        return self.environment == 'development'
+        return self.environment == "development"
 
 
 @dataclass
@@ -284,18 +272,10 @@ class Config:
     Aggregates all configuration sections and provides validation.
     """
 
-    database: DatabaseConfig = field(
-        default_factory=DatabaseConfig
-    )
-    schwab_api: SchwabAPIConfig = field(
-        default_factory=SchwabAPIConfig
-    )
-    optional_apis: OptionalAPIConfig = field(
-        default_factory=OptionalAPIConfig
-    )
-    app: ApplicationConfig = field(
-        default_factory=ApplicationConfig
-    )
+    database: DatabaseConfig = field(default_factory=DatabaseConfig)
+    schwab_api: SchwabAPIConfig = field(default_factory=SchwabAPIConfig)
+    optional_apis: OptionalAPIConfig = field(default_factory=OptionalAPIConfig)
+    app: ApplicationConfig = field(default_factory=ApplicationConfig)
 
     def validate(self, require_schwab: bool = True) -> None:
         """
@@ -319,8 +299,8 @@ class Config:
 
         # Raise if any errors found
         if all_errors:
-            error_msg = (
-                "Configuration validation failed:\n" + "\n".join(f"  - {err}" for err in all_errors)
+            error_msg = "Configuration validation failed:\n" + "\n".join(
+                f"  - {err}" for err in all_errors
             )
             raise ValueError(error_msg)
 
@@ -334,13 +314,19 @@ class Config:
         print(f"  Host: {self.database.host}:{self.database.port}")
         print(f"  Database: {self.database.name}")
         print(f"  User: {self.database.user}")
-        print(f"  Password: {'*' * len(self.database.password) \
-                             if self.database.password else '(not set)'}")
-        print(f"  Connection Pool: {self.database.min_connections}-{self.database.max_connections}")
+        print(
+            f"  Password: {'*' * len(self.database.password) \
+                             if self.database.password else '(not set)'}"
+        )
+        print(
+            f"  Connection Pool: {self.database.min_connections}-{self.database.max_connections}"
+        )
 
         print("\nSchwab API:")
         print(f"  App Key: {'*' * 20 if self.schwab_api.app_key else '(not set)'}")
-        print(f"  Client Secret: {'*' * 20 if self.schwab_api.client_secret else '(not set)'}")
+        print(
+            f"  Client Secret: {'*' * 20 if self.schwab_api.client_secret else '(not set)'}"
+        )
 
         configured_apis = self.optional_apis.get_configured_apis()
         print("\nOptional APIs:")

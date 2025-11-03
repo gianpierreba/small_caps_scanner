@@ -15,6 +15,6 @@ Example:
     >>> timestamp = helper.detect_and_convert_timestamp(1698765432000)
 """
 
-from .helpers import Helpers, DBHelpers
+from .helpers import DBHelpers, Helpers
 
 __all__ = ["Helpers", "DBHelpers"]

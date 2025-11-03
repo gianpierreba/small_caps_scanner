@@ -8,6 +8,7 @@ import atexit
 import os
 import sys
 from typing import Optional
+
 from psycopg2 import DatabaseError, OperationalError
 from psycopg2.pool import ThreadedConnectionPool
 
@@ -28,21 +29,14 @@ class DatabaseConnection:
     connection_pool = None
 
     @classmethod
-    def initialize_pool(
-        cls,
-        minconn,
-        maxconn,
-        **db_params
-    ):
+    def initialize_pool(cls, minconn, maxconn, **db_params):
         """
         Initialize the connection pool.
         This should be called once, typically when the application starts.
         """
         if cls.connection_pool is None:
             cls.connection_pool = ThreadedConnectionPool(
-                minconn=minconn,
-                maxconn=maxconn,
-                **db_params
+                minconn=minconn, maxconn=maxconn, **db_params
             )
 
     @classmethod
@@ -64,10 +58,7 @@ class DatabaseConnection:
         return cls.connection_pool.getconn()
 
     @classmethod
-    def release_connection(
-        cls,
-        connection
-    ):
+    def release_connection(cls, connection):
         """
         Return a connection to the pool.
 
@@ -107,18 +98,13 @@ class DatabaseOperation:
         if self.cursor:
             self.cursor.close()
         if self.conn:
-            DatabaseConnection.release_connection(
-                self.conn
-            )
+            DatabaseConnection.release_connection(self.conn)
 
 
 class InsertData(DatabaseOperation):
     """Insert data into DB"""
-    def insert_data(
-            self,
-            table: str,
-            data: dict
-        ):
+
+    def insert_data(self, table: str, data: dict):
         """
         Insert data into the specified table.
 
@@ -150,15 +136,16 @@ class RetrieveData(DatabaseOperation):
     """
     Retrieve data from the database.
     """
+
     # pylint: disable=too-many-positional-arguments,too-many-arguments
     def retrieve_data(
-            self,
-            table_name: str,
-            condition_column: Optional[str] = None,
-            condition_value: Optional[str] = None,
-            column: Optional[str] = None,
-            fetch_all: Optional[bool] = True
-        ) -> list:
+        self,
+        table_name: str,
+        condition_column: Optional[str] = None,
+        condition_value: Optional[str] = None,
+        column: Optional[str] = None,
+        fetch_all: Optional[bool] = True,
+    ) -> list:
         """
         Retrieve data from a table with an optional WHERE clause using parameterized queries.
 
@@ -184,7 +171,7 @@ class RetrieveData(DatabaseOperation):
         """
         try:
             self.open_connection()
-            column = column or '*'
+            column = column or "*"
             query = f"SELECT {column} FROM {table_name}"
             if condition_column and condition_value:
                 query += f" WHERE {condition_column} = %s"
@@ -201,12 +188,12 @@ class RetrieveData(DatabaseOperation):
             self.close_connection()
 
     def execute_custom_query(
-            self,
-            query: str,
-            params: tuple = (),
-            retrieve: bool = True,
-            fetch_all: bool = True
-        ) -> list:
+        self,
+        query: str,
+        params: tuple = (),
+        retrieve: bool = True,
+        fetch_all: bool = True,
+    ) -> list:
         """
         Execute a custom SQL query.
 
@@ -248,13 +235,14 @@ class RetrieveData(DatabaseOperation):
 
 class UpdateData(DatabaseOperation):
     """Update data in DB"""
+
     def update_data(
-            self,
-            table: str,
-            update_data: dict,
-            where_constraint_column: str,
-            where_constraint_data: str
-        ):
+        self,
+        table: str,
+        update_data: dict,
+        where_constraint_column: str,
+        where_constraint_data: str,
+    ):
         """
         Update data in the specified table.
 
@@ -275,11 +263,11 @@ class UpdateData(DatabaseOperation):
         """
         try:
             self.open_connection()
-            set_clause = ", ".join(
-                [f"{key} = %s" for key in update_data.keys()])
-            update_query = f"UPDATE {table} SET {set_clause} WHERE {where_constraint_column} = %s"
-            data_to_update = list(update_data.values()) + \
-                [where_constraint_data]
+            set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
+            update_query = (
+                f"UPDATE {table} SET {set_clause} WHERE {where_constraint_column} = %s"
+            )
+            data_to_update = list(update_data.values()) + [where_constraint_data]
             self.cursor.execute(update_query, data_to_update)
             self.conn.commit()
         except (OperationalError, DatabaseError) as e:
@@ -300,18 +288,18 @@ if config is not None:
         port=db_config.port,
         database=db_config.name,
         user=db_config.user,
-        password=db_config.password
+        password=db_config.password,
     )
 else:
     # Fallback to environment variables only (legacy support)
     DatabaseConnection.initialize_pool(
-        minconn=int(os.getenv('DB_MIN_CONN', '5')),
-        maxconn=int(os.getenv('DB_MAX_CONN', '20')),
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=int(os.getenv('DB_PORT', '5432')),
-        database=os.getenv('DB_NAME', 'trading'),
-        user=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', '')
+        minconn=int(os.getenv("DB_MIN_CONN", "5")),
+        maxconn=int(os.getenv("DB_MAX_CONN", "20")),
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", "5432")),
+        database=os.getenv("DB_NAME", "trading"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", ""),
     )
 
 # Cleanup when the application stops
