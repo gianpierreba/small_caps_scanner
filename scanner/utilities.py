@@ -67,16 +67,10 @@ class Searching:
         print("---- ---- " * 4)
         print(f"Ticker -> {self.stock_ticker}")
 
-        stock_float = (
-            helper.format_number(search.stock_float()) if search.stock_float() else None
-        )
-        market_cap = (
-            helper.format_number(search.market_cap()) if search.market_cap() else None
-        )
+        stock_float = helper.format_number(search.stock_float()) if search.stock_float() else None
+        market_cap = helper.format_number(search.market_cap()) if search.market_cap() else None
         held_insiders = (
-            helper.format_percentage(search.held_insiders())
-            if search.held_insiders()
-            else None
+            helper.format_percentage(search.held_insiders()) if search.held_insiders() else None
         )
         held_institutions = (
             helper.format_percentage(search.held_institutions())
@@ -84,14 +78,10 @@ class Searching:
             else None
         )
         avg_vol_3_month = (
-            helper.format_number(search.avg_volume_3m())
-            if search.avg_volume_3m()
-            else None
+            helper.format_number(search.avg_volume_3m()) if search.avg_volume_3m() else None
         )
         avg_vol_10_day = (
-            helper.format_number(search.avg_volume_10d())
-            if search.avg_volume_10d()
-            else None
+            helper.format_number(search.avg_volume_10d()) if search.avg_volume_10d() else None
         )
 
         print(f"Stock Float -> {stock_float}")

@@ -66,9 +66,7 @@ class ScanStockAnalysis:
             UserWarning,
             stacklevel=2,
         )
-        logger.info(
-            "ScanStockAnalysis scraper initialized - Remember to attribute data source"
-        )
+        logger.info("ScanStockAnalysis scraper initialized - Remember to attribute data source")
 
         self._name_lines_premarket_gainers = None
         self._name_lines_regular_market_gainers = None
@@ -131,9 +129,7 @@ class ScanStockAnalysis:
         if data_type == "active":
             row = self._name_lines_regular_market_active[position]
             return row.find_all("td")[column].get_text(strip=True)
-        raise ValueError(
-            f"Invalid data_type: '{data_type}'. Must be 'gainers' or 'active'"
-        )
+        raise ValueError(f"Invalid data_type: '{data_type}'. Must be 'gainers' or 'active'")
 
     def regular_market_length(self, data_type: str):
         """
@@ -147,9 +143,7 @@ class ScanStockAnalysis:
             return len(self._name_lines_regular_market_gainers)
         if data_type == "active":
             return len(self._name_lines_regular_market_active)
-        raise ValueError(
-            f"Invalid data_type: '{data_type}'. Must be 'gainers' or 'active'"
-        )
+        raise ValueError(f"Invalid data_type: '{data_type}'. Must be 'gainers' or 'active'")
 
     def premarket_gainers_length(self):
         """
@@ -176,7 +170,5 @@ class ScanStockAnalysis:
         if market == "regular_market":
             if data_type is None:
                 raise ValueError("'data_type' must be provided for 'regular_market'")
-            return self._get_regular_market_info(
-                position=position, column=1, data_type=data_type
-            )
+            return self._get_regular_market_info(position=position, column=1, data_type=data_type)
         raise ValueError("market must be either 'pre_market' or 'regular_market'")

@@ -27,7 +27,6 @@ Example:
     ... )
 """
 
-from .scanners_db import (DatabaseConnection, InsertData, RetrieveData,
-                          UpdateData)
+from .scanners_db import DatabaseConnection, InsertData, RetrieveData, UpdateData
 
 __all__ = ["DatabaseConnection", "InsertData", "RetrieveData", "UpdateData"]

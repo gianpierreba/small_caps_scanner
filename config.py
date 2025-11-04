@@ -29,8 +29,7 @@ from typing import Optional
 def load_env_file():
     """Load environment variables from .env file if it exists"""
     try:
-        from dotenv import \
-            load_dotenv  # pylint: disable=import-outside-toplevel
+        from dotenv import load_dotenv  # pylint: disable=import-outside-toplevel
 
         env_path = Path(__file__).parent / ".env"
         if env_path.exists():
@@ -57,12 +56,8 @@ class DatabaseConfig:
     password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
 
     # Connection pool settings
-    min_connections: int = field(
-        default_factory=lambda: int(os.getenv("DB_MIN_CONN", "5"))
-    )
-    max_connections: int = field(
-        default_factory=lambda: int(os.getenv("DB_MAX_CONN", "20"))
-    )
+    min_connections: int = field(default_factory=lambda: int(os.getenv("DB_MIN_CONN", "5")))
+    max_connections: int = field(default_factory=lambda: int(os.getenv("DB_MAX_CONN", "20")))
 
     def validate(self) -> list[str]:
         """
@@ -117,9 +112,7 @@ class SchwabAPIConfig:
     """Charles Schwab API configuration"""
 
     app_key: Optional[str] = field(default_factory=lambda: os.getenv("APP_KEY_SCHWAB"))
-    client_secret: Optional[str] = field(
-        default_factory=lambda: os.getenv("CLIENT_SECRET_SCHWAB")
-    )
+    client_secret: Optional[str] = field(default_factory=lambda: os.getenv("CLIENT_SECRET_SCHWAB"))
 
     def validate(self) -> list[str]:
         """
@@ -131,9 +124,7 @@ class SchwabAPIConfig:
         errors = []
 
         if not self.app_key:
-            errors.append(
-                "APP_KEY_SCHWAB is required (get from https://developer.schwab.com/)"
-            )
+            errors.append("APP_KEY_SCHWAB is required (get from https://developer.schwab.com/)")
 
         if not self.client_secret:
             errors.append("CLIENT_SECRET_SCHWAB is required")
@@ -148,19 +139,13 @@ class OptionalAPIConfig:
     alpha_vantage_key: Optional[str] = field(
         default_factory=lambda: os.getenv("ALPHA_VANTAGE_API_KEY")
     )
-    polygon_key: Optional[str] = field(
-        default_factory=lambda: os.getenv("POLYGON_API_KEY")
-    )
+    polygon_key: Optional[str] = field(default_factory=lambda: os.getenv("POLYGON_API_KEY"))
     fmp_key: Optional[str] = field(default_factory=lambda: os.getenv("FMP_API_KEY"))
-    alpaca_client_id: Optional[str] = field(
-        default_factory=lambda: os.getenv("ALPACA_CLIENT_ID")
-    )
+    alpaca_client_id: Optional[str] = field(default_factory=lambda: os.getenv("ALPACA_CLIENT_ID"))
     alpaca_client_secret: Optional[str] = field(
         default_factory=lambda: os.getenv("ALPACA_CLIENT_SECRET")
     )
-    intrinio_key: Optional[str] = field(
-        default_factory=lambda: os.getenv("INTRINIO_API_KEY")
-    )
+    intrinio_key: Optional[str] = field(default_factory=lambda: os.getenv("INTRINIO_API_KEY"))
 
     def get_configured_apis(self) -> list[str]:
         """
@@ -190,9 +175,7 @@ class ApplicationConfig:
     """Application-level configuration"""
 
     # Scanner settings
-    sleep_time: int = field(
-        default_factory=lambda: int(os.getenv("SCANNER_SLEEP_TIME", "10"))
-    )
+    sleep_time: int = field(default_factory=lambda: int(os.getenv("SCANNER_SLEEP_TIME", "10")))
     output_length: int = field(
         default_factory=lambda: int(os.getenv("SCANNER_OUTPUT_LENGTH", "15"))
     )
@@ -204,9 +187,7 @@ class ApplicationConfig:
     )
 
     # Environment
-    environment: str = field(
-        default_factory=lambda: os.getenv("ENVIRONMENT", "development")
-    )
+    environment: str = field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))
 
     def validate(self) -> list[str]:
         """
@@ -218,9 +199,7 @@ class ApplicationConfig:
         errors = []
 
         if self.sleep_time < 1:
-            errors.append(
-                f"SCANNER_SLEEP_TIME must be >= 1 second, got: {self.sleep_time}"
-            )
+            errors.append(f"SCANNER_SLEEP_TIME must be >= 1 second, got: {self.sleep_time}")
 
         if self.sleep_time < 10:
             errors.append(
@@ -229,21 +208,15 @@ class ApplicationConfig:
             )
 
         if self.output_length < 1:
-            errors.append(
-                f"SCANNER_OUTPUT_LENGTH must be >= 1, got: {self.output_length}"
-            )
+            errors.append(f"SCANNER_OUTPUT_LENGTH must be >= 1, got: {self.output_length}")
 
         valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if self.log_level.upper() not in valid_log_levels:
-            errors.append(
-                f"LOG_LEVEL must be one of {valid_log_levels}, got: {self.log_level}"
-            )
+            errors.append(f"LOG_LEVEL must be one of {valid_log_levels}, got: {self.log_level}")
 
         valid_log_formats = ["text", "json"]
         if self.log_format not in valid_log_formats:
-            errors.append(
-                f"LOG_FORMAT must be one of {valid_log_formats}, got: {self.log_format}"
-            )
+            errors.append(f"LOG_FORMAT must be one of {valid_log_formats}, got: {self.log_format}")
 
         valid_environments = ["development", "testing", "production"]
         if self.environment not in valid_environments:
@@ -318,15 +291,11 @@ class Config:
             f"  Password: {'*' * len(self.database.password) \
                              if self.database.password else '(not set)'}"
         )
-        print(
-            f"  Connection Pool: {self.database.min_connections}-{self.database.max_connections}"
-        )
+        print(f"  Connection Pool: {self.database.min_connections}-{self.database.max_connections}")
 
         print("\nSchwab API:")
         print(f"  App Key: {'*' * 20 if self.schwab_api.app_key else '(not set)'}")
-        print(
-            f"  Client Secret: {'*' * 20 if self.schwab_api.client_secret else '(not set)'}"
-        )
+        print(f"  Client Secret: {'*' * 20 if self.schwab_api.client_secret else '(not set)'}")
 
         configured_apis = self.optional_apis.get_configured_apis()
         print("\nOptional APIs:")

@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import yfinance as yf
+
 # Polygon API
 from polygon import RESTClient
 from polygon.rest.models import TickerSnapshot
@@ -58,9 +59,7 @@ class SchwabAPI:
     APP_KEY_SCHWAB = os.getenv("APP_KEY_SCHWAB")
     CLIENT_SECRET_SCHWAB = os.getenv("CLIENT_SECRET_SCHWAB")
 
-    def __init__(
-        self, access_token: Optional[str] = None, stock_ticker: Optional[str] = None
-    ):
+    def __init__(self, access_token: Optional[str] = None, stock_ticker: Optional[str] = None):
         """
         Initialize SchwabAPI client, set up authentication and optionally load
         market data for a given stock ticker
@@ -92,9 +91,7 @@ class SchwabAPI:
         if stock_ticker is not None:
             self.stock_ticker = stock_ticker
             self._quote_single = self.quote_single(stock_ticker=self.stock_ticker)
-            self._stock_fundamental = self.stock_fundamental(
-                stock_ticker=self.stock_ticker
-            )
+            self._stock_fundamental = self.stock_fundamental(stock_ticker=self.stock_ticker)
         else:
             self.stock_ticker = None
 
@@ -176,12 +173,8 @@ class SchwabAPI:
         code_start = returned_url.index("code=") + 5
         code_end = returned_url.index("%40")
         response_code = f"{returned_url[code_start:code_end]}@"
-        credentials = (
-            f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
-        )
-        base64_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
-            "utf-8"
-        )
+        credentials = f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
+        base64_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
 
         headers = {
             "Authorization": f"Basic {base64_credentials}",
@@ -208,9 +201,7 @@ class SchwabAPI:
         webbrowser.open(auth_url)
         LOGGER.info("Paste Returned URL:")
         returned_url = input()
-        headers, payload = self._construct_headers_and_payload(
-            returned_url=returned_url
-        )
+        headers, payload = self._construct_headers_and_payload(returned_url=returned_url)
         tokens = self._retrieve_tokens(headers=headers, payload=payload)
         current_datetime = datetime.now()
 
@@ -224,9 +215,7 @@ class SchwabAPI:
             "access_token": tokens["access_token"],
             "id_token": tokens["id_token"],
         }
-        self.inserter.insert_data(
-            table=self.schwab_access, data=access_refresh_token_data
-        )
+        self.inserter.insert_data(table=self.schwab_access, data=access_refresh_token_data)
         return tokens
 
     def _refresh_tokens(self):
@@ -235,9 +224,7 @@ class SchwabAPI:
             column="refresh_token",
         )[-1][0]
         payload = {"grant_type": "refresh_token", "refresh_token": refresh_token}
-        credentials = (
-            f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
-        )
+        credentials = f"{self.__class__.APP_KEY_SCHWAB}:" f"{self.__class__.CLIENT_SECRET_SCHWAB}"
         encoded_creds = base64.b64encode(credentials.encode()).decode()
         headers = {
             "Authorization": f"Basic {encoded_creds}",
@@ -263,13 +250,10 @@ class SchwabAPI:
                 "access_token": tokens["access_token"],
                 "id_token": tokens["id_token"],
             }
-            self.inserter.insert_data(
-                table=self.schwab_access, data=access_refresh_token_data
-            )
+            self.inserter.insert_data(table=self.schwab_access, data=access_refresh_token_data)
             return {
                 "access_token": tokens["access_token"],
-                "expiry_time": current_datetime
-                + timedelta(seconds=tokens["expires_in"]),
+                "expiry_time": current_datetime + timedelta(seconds=tokens["expires_in"]),
             }
         LOGGER.error("Error refreshing access token: %s", response.text)
         return None
@@ -306,9 +290,7 @@ class SchwabAPI:
             float: Market capitalization value as a float.
         """
         stock_fundamental = (
-            self._stock_fundamental
-            if self.stock_ticker
-            else self.stock_fundamental(stock_ticker)
+            self._stock_fundamental if self.stock_ticker else self.stock_fundamental(stock_ticker)
         )
         return stock_fundamental["instruments"][0]["fundamental"]["marketCap"]
 
@@ -324,9 +306,7 @@ class SchwabAPI:
             Average trading volume for the specified period, or None if unavailable
         """
         stock_fundamental = (
-            self._stock_fundamental
-            if self.stock_ticker
-            else self.stock_fundamental(stock_ticker)
+            self._stock_fundamental if self.stock_ticker else self.stock_fundamental(stock_ticker)
         )
 
         volume_map = {1: "avg1DayVolume", 10: "avg10DaysVolume", 30: "avg3MonthVolume"}
@@ -417,9 +397,7 @@ class SchwabAPI:
                 return None
         else:
             try:
-                return self._quote_single[self.stock_ticker]["quote"][
-                    "netPercentChange"
-                ]
+                return self._quote_single[self.stock_ticker]["quote"]["netPercentChange"]
             except KeyError:
                 return None
 
@@ -492,9 +470,7 @@ class SchwabAPI:
 class SearchYahooFinance:
     """Yahoo Finance API wrapper with lazy loading"""
 
-    def __init__(
-        self, ticker: Optional[str] = None, company_name: Optional[str] = None
-    ):
+    def __init__(self, ticker: Optional[str] = None, company_name: Optional[str] = None):
         """
         Initialize a SearchYahooFinance instance with optional ticker and company name
 
@@ -848,9 +824,7 @@ class FMPApi:
         # HTTP Basic Auth with API key as username
         self.session.auth = (self.api_key, "")
 
-    def _make_request(
-        self, endpoint: str, params: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Make authenticated request to FMP API
 
@@ -955,9 +929,7 @@ class AlpacaAPI:
             )
             raise ValueError(msg)
 
-        self.alpaca_client_secret = (
-            alpaca_client_secret or self.__class__.ALPACA_CLIENT_SECRET
-        )
+        self.alpaca_client_secret = alpaca_client_secret or self.__class__.ALPACA_CLIENT_SECRET
 
         if not alpaca_client_secret:
             msg = (
@@ -969,9 +941,7 @@ class AlpacaAPI:
         self.base_url = "https://data.alpaca.markets/v1beta1"
         self.session = requests.Session()
 
-    def _make_request(
-        self, endpoint: str, params: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Make authenticated request to Alpaca API
 
@@ -1017,9 +987,7 @@ class AlpacaAPI:
             LOGGER.error("Request failed: %s", e)
             raise
 
-    def top_market_movers(
-        self, market_type: str = "stocks", top: int = 10
-    ) -> list[str]:
+    def top_market_movers(self, market_type: str = "stocks", top: int = 10) -> list[str]:
         """
         Fetches top gaining stock tickers from Alpaca API.
 
@@ -1138,9 +1106,7 @@ class IntrinioAPI:
         # HTTP Basic Auth with API key as username
         self.session.auth = (self.api_key, "")
 
-    def _make_request(
-        self, endpoint: str, params: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Make authenticated request to Intrinio API
 

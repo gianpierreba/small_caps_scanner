@@ -383,9 +383,7 @@ class DBHelpers:
 
         # Handle cases where no UUID is found
         if not uuid_raw:
-            msg_look_up_error = (
-                f"No UUID found for ticker '{ticker}' in market '{market}'."
-            )
+            msg_look_up_error = f"No UUID found for ticker '{ticker}' in market '{market}'."
             raise LookupError(msg_look_up_error)
 
         return uuid_raw[0]

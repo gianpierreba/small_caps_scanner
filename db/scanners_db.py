@@ -264,9 +264,7 @@ class UpdateData(DatabaseOperation):
         try:
             self.open_connection()
             set_clause = ", ".join([f"{key} = %s" for key in update_data.keys()])
-            update_query = (
-                f"UPDATE {table} SET {set_clause} WHERE {where_constraint_column} = %s"
-            )
+            update_query = f"UPDATE {table} SET {set_clause} WHERE {where_constraint_column} = %s"
             data_to_update = list(update_data.values()) + [where_constraint_data]
             self.cursor.execute(update_query, data_to_update)
             self.conn.commit()

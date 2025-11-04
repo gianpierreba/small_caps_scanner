@@ -213,9 +213,7 @@ if __name__ == "__main__":
     print("Scanners running. Press Ctrl+C to stop.")
     print("⚠️  REMINDER: Remember to attribute data to StockAnalysis.com")
     print("    Monitor for HTTP 403/429 errors and stop immediately if blocked.")
-    print(
-        "\nℹ️  NOTE: After-market scanner is currently under development and disabled.\n"
-    )
+    print("\nℹ️  NOTE: After-market scanner is currently under development and disabled.\n")
 
     # Keep the main thread alive (cross-platform solution)
     # signal.pause() is only available on Unix systems
