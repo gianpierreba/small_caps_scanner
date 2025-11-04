@@ -268,7 +268,7 @@ class ScannerCore:
                 stock_ticker=stock_ticker, scanner_table=scanner_table, market=market
             )
         else:
-            self._add_new_ticker(scanner_table=stock_ticker, scanner_table=scanner_table)
+            self._add_new_ticker(stock_ticker=stock_ticker, scanner_table=scanner_table)
 
     def _update_existing_ticker(self, stock_ticker: str, scanner_table: str, market: str):
         """Handle existing ticker update logic"""
