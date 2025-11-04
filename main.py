@@ -199,8 +199,7 @@ if __name__ == "__main__":
 
     # Regular-Market Scanners - ACTIVE
     # Comment this out if you only want Pre-Market scanner
-    # start_scanner_thread(market_type=MarketType.REGULAR_MARKET,
-    #                      sleep_time=sleep_time)
+    start_scanner_thread(market_type=MarketType.REGULAR_MARKET, sleep_time=sleep_time)
 
     # After-Market Scanners - DISABLED (UNDER DEVELOPMENT)
     # ⚠️ NOTICE: After-market scanner is incomplete and currently disabled
