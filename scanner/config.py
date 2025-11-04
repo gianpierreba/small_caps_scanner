@@ -47,7 +47,10 @@ def get_scanner_configs():
     NOTE: AfterMarket scanner is currently under development and disabled.
     The MarketType.AFTER_MARKET enum remains for database schema compatibility.
     """
-    from .scanner import PreMarket, RegularMarket  # pylint: disable=import-outside-toplevel
+    from .scanner import (  # pylint: disable=import-outside-toplevel
+        PreMarket,
+        RegularMarket,
+    )
 
     # AfterMarket is commented out - under development
 
