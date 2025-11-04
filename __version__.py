@@ -2,11 +2,23 @@
 Version information for Stock Market Scanner
 """
 
-__version__ = "0.1.0"
-__version_info__ = (0, 1, 0)
+__version__ = "0.2.0"
+__version_info__ = (0, 2, 0)
 
 # Version history
 VERSION_HISTORY = {
+    "0.2.0": {
+        "date": "2025-11-03",
+        "changes": [
+            "Comprehensive code quality improvements",
+            "Added type hints throughout codebase",
+            "Fixed all pylint warnings",
+            "Improved code maintainability",
+            "No breaking changes to functionality",
+            "Enhanced developer experience",
+        ],
+        "breaking_changes": [],
+    },
     "0.1.0": {
         "date": "2025-10-26",
         "changes": [
@@ -20,7 +32,7 @@ VERSION_HISTORY = {
             "Cross-platform database setup (SQL scripts)",
         ],
         "breaking_changes": [],
-    }
+    },
 }
 
 
