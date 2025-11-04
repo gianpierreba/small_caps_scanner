@@ -1,0 +1,24 @@
+repos:
+  # Black - Code Formatting
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+        language_version: python3.13
+        args: [--line-length=100]
+
+  # isort - Import Sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+        args: [--profile=black]
+
+  # Pylint - Code Quality
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v4.0.2
+    hooks:
+      - id: pylint
+        args: [--rcfile=.pylintrc, --exit-zero]
+        additional_dependencies:
+          - pylint
